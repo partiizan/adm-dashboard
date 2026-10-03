@@ -1,7 +1,7 @@
-import {securityColor, recentReports} from './core.js';
+import {securityColor} from './core.js';
 export class StarMap {
   constructor(canvas, universe, onSelect) {
-    Object.assign(this,{canvas,universe,onSelect,scale:1,ox:0,oy:0,route:[],reports:[],sov:new Map(),stale:true,showAdm:true,selected:null,points:new Map(),pointers:new Map()});
+    Object.assign(this,{canvas,universe,onSelect,scale:1,ox:0,oy:0,route:[],sov:new Map(),stale:true,showAdm:true,selected:null,points:new Map(),pointers:new Map()});
     this.ctx=canvas.getContext('2d');
     new ResizeObserver(()=>{this.resize();}).observe(canvas.parentElement);
     canvas.addEventListener('wheel',e=>{e.preventDefault();const p=this.position(e);this.zoom(Math.exp(-e.deltaY*.0015),p);},{passive:false});
@@ -50,12 +50,10 @@ export class StarMap {
     const c=this.ctx,w=this.width,h=this.height;if(!w||!h)return;c.clearRect(0,0,w,h);c.fillStyle='#1c2b3b';for(let x=22;x<w;x+=32)for(let y=20;y<h;y+=32)c.fillRect(x,y,1,1);if(!this.region)return;
     this.points=new Map(this.region.nodes.map(n=>[n.name,{x:n.x*this.scale+this.ox,y:n.y*this.scale+this.oy}]));
     const edges=new Set();for(let i=1;i<this.route.length;i++){edges.add(this.route[i-1].name+'|'+this.route[i].name);edges.add(this.route[i].name+'|'+this.route[i-1].name);}
-    const recent=recentReports(this.reports);
     for(const n of this.region.nodes){const sys=this.universe.lookup(n.name),start=this.points.get(n.name);for(const jump of sys.jumps){const end=this.points.get(jump);if(!end||n.name>=jump)continue;const r=edges.has(n.name+'|'+jump);c.beginPath();c.moveTo(start.x,start.y);c.lineTo(end.x,end.y);c.strokeStyle=r?'#55dfc5':'#344357';c.lineWidth=r?2.5:1;c.stroke();}}
     const circle=(p,r,color,width=1)=>{c.beginPath();c.arc(p.x,p.y,r,0,Math.PI*2);c.strokeStyle=color;c.lineWidth=width;c.stroke();};
     c.textAlign='center';c.textBaseline='top';const labels=[];
-    for(const n of [...this.region.nodes].sort((a,b)=>Number(b.name===this.selected)-Number(a.name===this.selected))){const p=this.points.get(n.name);if(p.x < -70||p.y < -35||p.x > w+70||p.y > h+35)continue;const sys=this.universe.lookup(n.name),report=recent.get(n.name),sov=this.sov.get(sys.id);
-      if(report){circle(p,13,report.clear?'#6dddaf':'#ff997e',1.8);circle(p,18,report.clear?'#426856':'#735043',.7);}
+    for(const n of [...this.region.nodes].sort((a,b)=>Number(b.name===this.selected)-Number(a.name===this.selected))){const p=this.points.get(n.name);if(p.x < -70||p.y < -35||p.x > w+70||p.y > h+35)continue;const sys=this.universe.lookup(n.name),sov=this.sov.get(sys.id);
       if(n.name===this.selected)circle(p,9,'#edf6ff',1.6);
       c.fillStyle='#0a111b';c.beginPath();c.arc(p.x,p.y,4.2,0,Math.PI*2);c.fill();circle(p,4.2,securityColor(sys.security),n.outside?1:1.7);
       if(!n.outside){c.fillStyle=securityColor(sys.security);c.beginPath();c.arc(p.x,p.y,1.5,0,Math.PI*2);c.fill();}

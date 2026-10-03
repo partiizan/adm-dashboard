@@ -1,6 +1,6 @@
-# ADM Dashboard — Web beta 0.3
+# ADM Dashboard — Web beta 0.4
 
-A static browser companion for EVE Online, designed for GitHub Pages. Includes 5,202 systems across 68 regional maps, shortest stargate routing, live public sovereignty ADM and development indexes, manual intel, and local UTF-8/UTF-16 chat-log import. No ESI login or server required.
+A static browser companion for EVE Online, designed for GitHub Pages. Includes 5,202 systems across 68 regional maps, shortest stargate routing, live public sovereignty ADM and development indexes. No ESI login or server required.
 
 ## Run and build
 
@@ -26,9 +26,9 @@ The workflow tests and builds the site, uploads `dist`, and deploys it to Pages.
 
 - Regional layouts and gates are a bundled snapshot from Slazanger/SMT commit `6b3b4c6a213a349549ef737c89584fc3f048033b`. Source: https://github.com/Slazanger/SMT . Upstream MIT notice is included.
 - Public ADM endpoint: `https://esi.evetech.net/sovereignty/systems`, compatibility date `2026-05-19`. Polling is about every five minutes while visible. Failures keep cached values visibly marked. Missing ADM is not treated as zero.
-- Settings and public ADM cache use localStorage. Intel stays in tab memory and disappears on reload. Imported files are never uploaded. GitHub receives ordinary site requests; CCP receives public ESI requests.
-- Import up to ten .txt files per batch, each up to 5 MB. Up to 500 reports retained; newest 100 displayed. Intel requires complete system names, and map highlights expire after 15 minutes. Imported timestamps are treated as UTC.
 - Routes use the bundled stargates, not wormholes or jump bridges. High-security-only routing uses EVE's displayed high-security threshold. Verify routes in game.
-- No live folder watching, shared intel, EVE SSO, ship tracking, or desktop overlay. ADM may be delayed by CCP caching. This is a beta, not a safety guarantee.
 
 Unofficial project; not endorsed by CCP or SMT's maintainers. EVE Online belongs to CCP.
+
+
+Settings and public ADM cache remain in browser storage. This dashboard does not access local files or ingest intel.

@@ -1,10 +1,10 @@
-import {makeUniverse,route,parseSovereignty,makeIntelParser,decodeLog,securityColor} from './core.js';
+import {makeUniverse,route,parseSovereignty,securityColor} from './core.js';
 import {StarMap} from './map.js';
 const $=id=>document.getElementById(id);
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Private mode or full storage: session still works. */}};
 const prefs=read('smt-atlas-prefs',{}),cache=read('smt-atlas-adm',null);
-const state={universe:null,map:null,region:null,selected:null,reports:[],demoReports:[],demo:false,sov:new Map(),checked:null,etag:null,stale:true,nextCheck:0,fetching:false};
+const state={universe:null,map:null,region:null,selected:null,sov:new Map(),checked:null,etag:null,stale:true,nextCheck:0,fetching:false};
 function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked});}
 function el(tag,text,cls){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;}
 function panel(name){document.querySelector('.workspace').dataset.panel=name;for(const b of document.querySelectorAll('[data-panel].mobile-nav button, .mobile-nav button'))b.classList.toggle('active',b.dataset.panel===name);}
@@ -45,17 +45,10 @@ function plotRoute(event){event?.preventDefault();const from=$('route-from').val
   result.forEach((s,index)=>{const li=el('li'),button=el('button');button.type='button';button.append(el('span',String(index).padStart(2,'0'),'step'),el('b',s.name));const sec=el('em',s.security.toFixed(1));sec.style.color=securityColor(s.security);button.append(sec);button.onclick=()=>selectSystem(s.name,true);li.append(button);$('route-list').append(li);});
   if(result.length)selectSystem(result[0].name);state.map.draw();save();
 }
-function showReports(){const reports=state.demo?state.demoReports:state.reports;state.map.reports=reports;state.map.draw();$('intel-count').textContent=$('mobile-count').textContent=reports.length;$('demo-banner').hidden=!state.demo;$('demo-button').textContent=state.demo?'Exit demo':'Try demo';
-  $('intel-message').disabled=$('intel-form').querySelector('button').disabled=$('import-button').disabled=state.demo;
-  const list=$('intel-list');list.replaceChildren();
-  if(!reports.length){const empty=el('div',null,'empty-intel');empty.append(el('span','◎'),el('h3','Your intel, on the map.'),el('p','Import EVE chat logs or add a report below. Select a report to find its system.'));list.append(empty);}
-  for(const r of [...reports].sort((a,b)=>b.time-a.time).slice(0,100)){const b=el('button',null,'intel-report');b.append(el('strong',r.systems.join(' · ')+(r.clear?' / CLEAR REPORTED':' / REPORT'),r.clear?'report-clear':''),el('p',r.message));const old=Date.now()-r.time>900000;b.append(el('small',`${new Date(r.time).toLocaleDateString()} ${utc(r.time)} UTC · ${r.speaker} · ${r.source}${old?' · expired from map':''}`));b.onclick=()=>selectSystem(r.systems[0],true);list.append(b);}
-}
-function addReport(r){if(state.reports.some(x=>x.time===r.time&&x.speaker===r.speaker&&x.message===r.message&&x.source===r.source))return;state.reports.push(r);state.reports.sort((a,b)=>a.time-b.time);if(state.reports.length>500)state.reports.splice(0,state.reports.length-500);}
 async function init(){
   try{const response=await fetch('./data/universe.json');if(!response.ok)throw new Error('Map data unavailable');state.universe=makeUniverse(await response.json());}
   catch{$('map-loading').textContent='Could not load map data. Check your connection and reload this page.';$('app-status').textContent='Map download failed.';return;}
-  const u=state.universe,parse=makeIntelParser(u);state.map=new StarMap($('map'),u,name=>selectSystem(name));
+  const u=state.universe;state.map=new StarMap($('map'),u,name=>selectSystem(name));
   $('region').replaceChildren(...[...u.regions].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>{const o=el('option',r.name);o.value=r.name;return o;}));$('region').disabled=false;
   $('route-from').value=prefs.from||'';$('route-to').value=prefs.to||'';$('high-sec').checked=!!prefs.high;$('show-adm').checked=prefs.showAdm!==false;state.map.showAdm=$('show-adm').checked;
   chooseRegion(u.regions.some(r=>r.name===prefs.region)?prefs.region:'Delve');if(prefs.selected)selectSystem(prefs.selected);
@@ -66,14 +59,6 @@ async function init(){
   $('set-start').onclick=()=>{if(state.selected){$('route-from').value=state.selected.name;save();}};$('set-end').onclick=()=>{if(state.selected){$('route-to').value=state.selected.name;save();}};
   $('route-form').onsubmit=plotRoute;$('clear-route').onclick=()=>{state.map.route=[];$('route-list').replaceChildren();$('route-summary').textContent='Route cleared.';state.map.draw();};
   $('zoom-in').onclick=()=>state.map.zoom(1.25);$('zoom-out').onclick=()=>state.map.zoom(.8);$('fit').onclick=()=>state.map.fit();$('show-adm').onchange=()=>{state.map.showAdm=$('show-adm').checked;state.map.draw();save();};
-  $('demo-button').onclick=()=>{state.demo=!state.demo;if(state.demo){chooseRegion('Delve');selectSystem('1DQ1-A');state.demoReports=['1DQ1-A 3 neutrals on the gate','T5ZI-S clear','N-8YET interceptor towards 1DQ1-A'].map((m,i)=>parse(m,'DEMO',true,Date.now()-(i+1)*60000));}else state.demoReports=[];showReports();$('intel-status').textContent=state.demo?'Synthetic intel only. ADM values remain real ESI data.':'';};
-  $('intel-form').onsubmit=e=>{e.preventDefault();if(state.demo)return;const r=parse($('intel-message').value,'Manual',true);if(!r){$('intel-status').textContent='Include a complete system name, such as 1DQ1-A.';return;}addReport(r);$('intel-message').value='';$('intel-status').textContent='Report added locally.';showReports();};
-  $('clear-intel').onclick=()=>{if(state.demo)state.demoReports=[];else state.reports=[];showReports();};
-  $('import-button').onclick=()=>$('log-files').click();
-  $('log-files').onchange=async()=>{if(state.demo)return;const files=[...$('log-files').files];if(files.length>10){$('intel-status').textContent='Choose at most 10 files per import.';return;}let matched=0,failed=0;$('import-button').disabled=true;
-    try{for(const file of files){if(file.size>5*1024*1024){failed++;continue;}try{const text=decodeLog(await file.arrayBuffer());for(const line of text.split(/\r?\n/)){const r=parse(line,file.name);if(r){addReport(r);matched++;}}}catch{failed++;}await new Promise(r=>setTimeout(r,0));}showReports();$('intel-status').textContent=`${matched} matching lines read; duplicate reports merged.${failed?' '+failed+' files skipped (unreadable or over 5 MB).':''} Old reports do not highlight the map.`;}
-    finally{$('import-button').disabled=state.demo;$('log-files').value='';}
-  };
   try{if(cache?.data&&Number.isFinite(cache.checked)&&cache.checked<=Date.now()+60000){state.sov=parseSovereignty(cache.data);state.raw=cache.data;state.checked=cache.checked;state.etag=cache.etag;$('adm-status').textContent=`Cached · checked ${utc(cache.checked)} UTC`;applySov();}}catch{/* Invalid cache is replaced on the next fetch. */}
   const context=document.modelContext;
   if(context?.registerTool){
