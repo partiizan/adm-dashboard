@@ -5,7 +5,7 @@ const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fa
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Private mode or full storage: session still works. */}};
 const prefs=read('smt-atlas-prefs',{}),cache=read('smt-atlas-adm',null);
 const state={universe:null,map:null,region:null,selected:null,sov:new Map(),checked:null,etag:null,stale:true,nextCheck:0,fetching:false};
-function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked,fontScale:Number($('font-scale').value),admFilter:Number($('adm-filter').value),showSovereignty:$('show-sovereignty').checked});}
+function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked,fontScale:Number($('font-scale').value),admFilter:Number($('adm-filter').value)});}
 function el(tag,text,cls){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;}
 function panel(name){document.querySelector('.workspace').dataset.panel=name;for(const b of document.querySelectorAll('[data-panel].mobile-nav button, .mobile-nav button'))b.classList.toggle('active',b.dataset.panel===name);}
 for(const button of document.querySelectorAll('.mobile-nav button'))button.addEventListener('click',()=>panel(button.dataset.panel));
@@ -16,12 +16,23 @@ function selectSystem(name,showMap=false){const s=state.universe.lookup(name);if
   $('system-name').textContent=s.name;$('system-info').textContent=`${s.region}\nSecurity ${s.security.toFixed(2)} · ${s.jumps.length} gates`+(s.station?'\nNPC station present':'');$('set-start').disabled=$('set-end').disabled=false;updateDetail();state.map.draw();save();
   if(showMap)panel('map');
 }
-function updateDetail(){const s=state.selected;if(!s)return;const v=state.sov.get(s.id),box=$('adm-detail');box.style.color=state.stale?'#d9b573':'';
+const allianceNames=new Map();
+function allianceName(id){
+  if(!id)return 'Alliance name unavailable';
+  let entry=allianceNames.get(id);
+  if(!entry||(!entry.pending&&!entry.name&&Date.now()>entry.retry)){
+    entry={pending:true,retry:Date.now()+300000};allianceNames.set(id,entry);
+    fetch(`https://esi.evetech.net/alliances/${id}/`,{headers:{'X-Compatibility-Date':'2026-05-19'},signal:AbortSignal.timeout(15000)}).then(async response=>{if(!response.ok)throw new Error('Alliance unavailable');const data=await response.json();if(typeof data.name!=='string'||!data.name.trim())throw new Error('Missing name');entry.name=data.name;}).catch(()=>{}).finally(()=>{entry.pending=false;updateDetail();if(state.map?.hoverPoint)state.map.tooltip(state.map.hoverPoint);});
+  }
+  return entry.name||(entry.pending?`Loading alliance ${id}…`:`Alliance ${id} · name unavailable`);
+}
+function sovereigntyLabel(v){return v?.allianceId?allianceName(v.allianceId):v?.kind==='faction'?'NPC faction sovereignty':v?.kind==='unclaimed'?'Unclaimed':'Sovereignty unavailable';}
+function updateDetail(){const s=state.selected;if(!s)return;const v=state.sov.get(s.id),box=$('adm-detail');box.style.color=state.stale?'#d9b573':'';$('sovereignty-detail').textContent='Sovereignty · '+sovereigntyLabel(v)+(state.stale?' (cached/unverified)':'');
   if(!v){box.textContent='ADM · unavailable / not reported';return;}
   box.textContent=v.adm!=null?`ADM ${v.adm.toFixed(1)}×${state.stale?' · cached/old':''}\nMilitary ${v.military??'—'} · Industry ${v.industrial??'—'}\nStrategic ${v.strategic??'—'}${v.capital?' · Capital':''}`:['faction','unclaimed'].includes(v.kind)?'ADM · N/A (no applicable sov ADM)':'ADM · not reported by ESI';
 }
 function updateFilter(){if(!state.region)return;const threshold=Number($('adm-filter').value);const count=state.region.nodes.filter(n=>!n.outside&&matchesAdm(state.sov.get(state.universe.lookup(n.name).id),threshold)).length;$('filter-status').textContent=threshold?`${count} systems in this region below ${threshold.toFixed(1)} · orange rings${state.stale?' · cached/unverified data':''}. Missing ADM is excluded.`:'No ADM highlight filter.';}
-function displayOptions(){const scale=Number($('font-scale').value);document.documentElement.style.setProperty('--font-scale',scale);state.map.fontScale=scale;state.map.admFilter=Number($('adm-filter').value);state.map.showSovereignty=$('show-sovereignty').checked;updateFilter();state.map.draw();save();}
+function displayOptions(){const scale=Number($('font-scale').value);document.documentElement.style.setProperty('--font-scale',scale);state.map.fontScale=scale;state.map.admFilter=Number($('adm-filter').value);updateFilter();state.map.draw();save();}
 function applySov(){if(!state.map)return;state.map.sov=state.sov;state.map.stale=state.stale;state.map.draw();updateFilter();updateDetail();$('feed-dot').classList.toggle('fresh',!state.stale);}
 const utc=time=>new Date(time).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});
 async function refreshAdm(){
@@ -50,10 +61,10 @@ function plotRoute(event){event?.preventDefault();const from=$('route-from').val
 async function init(){
   try{const response=await fetch('./data/universe.json');if(!response.ok)throw new Error('Map data unavailable');state.universe=makeUniverse(await response.json());}
   catch{$('map-loading').textContent='Could not load map data. Check your connection and reload this page.';$('app-status').textContent='Map download failed.';return;}
-  const u=state.universe;state.map=new StarMap($('map'),u,name=>selectSystem(name));
+  const u=state.universe;state.map=new StarMap($('map'),u,name=>selectSystem(name));state.map.sovereigntyLabel=sovereigntyLabel;
   $('region').replaceChildren(...[...u.regions].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>{const o=el('option',r.name);o.value=r.name;return o;}));$('region').disabled=false;
   $('route-from').value=prefs.from||'';$('route-to').value=prefs.to||'';$('high-sec').checked=!!prefs.high;$('show-adm').checked=prefs.showAdm!==false;state.map.showAdm=$('show-adm').checked;
-  $('font-scale').value=[1,1.25,1.5].includes(prefs.fontScale)?String(prefs.fontScale):'1';$('adm-filter').value=[4,5].includes(prefs.admFilter)?String(prefs.admFilter):'0';$('show-sovereignty').checked=!!prefs.showSovereignty;for(const id of ['font-scale','adm-filter','show-sovereignty'])$(id).onchange=displayOptions;displayOptions();
+  $('font-scale').value=[1,1.25,1.5].includes(prefs.fontScale)?String(prefs.fontScale):'1';$('adm-filter').value=[4,5].includes(prefs.admFilter)?String(prefs.admFilter):'0';for(const id of ['font-scale','adm-filter'])$(id).onchange=displayOptions;displayOptions();
   chooseRegion(u.regions.some(r=>r.name===prefs.region)?prefs.region:'Delve');if(prefs.selected)selectSystem(prefs.selected);
   $('data-summary').textContent=`${u.systems.length.toLocaleString()} systems · ${u.regions.length} regional maps · Public ESI`;$('map-loading').hidden=true;
   $('region').onchange=()=>chooseRegion($('region').value);

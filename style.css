@@ -7,3 +7,5 @@
 .display-options{border-top:1px solid var(--line);padding-top:16px;margin-top:20px}.display-options>label:not(.check){display:block;margin:12px 0 5px}.display-options p{margin:8px 0}.display-options .check{margin:14px 0 8px;white-space:normal}.map-heading{flex-wrap:wrap}.masthead{flex-wrap:wrap}.brand{min-width:0!important}.map-controls{flex-wrap:wrap}.map-controls .check{white-space:normal}
 
 .monogram{font-size:27px;flex-shrink:0}.version{flex-shrink:0}
+
+#sovereignty-detail{margin-top:10px;overflow-wrap:anywhere}#map-tooltip{max-width:min(340px,100%);overflow-wrap:anywhere}
