@@ -1,4 +1,4 @@
-# ADM Dashboard — Web beta 0.6
+# ADM Dashboard — Web beta 0.7
 
 A static browser companion for EVE Online, designed for GitHub Pages. Includes 5,202 systems across 68 regional maps, shortest stargate routing, live public sovereignty ADM and development indexes. No ESI login or server required.
 
@@ -38,3 +38,5 @@ Settings and public ADM cache remain in browser storage. This dashboard does not
 Font size scales interface text and map labels to 100%, 125%, or 150%. ADM highlighting marks systems strictly below 5.0 or 4.0 with orange rings; missing/NPC ADM is excluded and cached results are labeled. Alliance logos replace map nodes by default using the alliance ID in public sovereignty data and CCP’s image server; unavailable logos fall back to nodes. All display settings are remembered in this browser.
 
 Sovereignty alliance names appear in selected-system details and map tooltips, resolved on demand from the public ESI alliance endpoint and cached for the session. Failed lookups display the alliance ID and retry after five minutes. No logo toggle is needed.
+
+Map labels display system name, sovereignty-holding alliance name, and ADM on separate lines. Labels reposition to avoid collisions; zoom in for crowded systems. Alliance names refresh labels as lookups finish. NPC/unclaimed systems are identified explicitly.

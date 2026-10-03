@@ -62,12 +62,23 @@ export class StarMap {
       c.fillStyle='#0a111b';c.beginPath();c.arc(p.x,p.y,4.2,0,Math.PI*2);c.fill();circle(p,4.2,securityColor(sys.security),n.outside?1:1.7);
       if(!n.outside){c.fillStyle=securityColor(sys.security);c.beginPath();c.arc(p.x,p.y,1.5,0,Math.PI*2);c.fill();}
       }
-      const font=10*this.fontScale,subfont=9*this.fontScale,labelY=p.y+radius+4;
-      c.font=`${font}px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`;
-      const labelWidth=Math.max(c.measureText(n.name).width,40*this.fontScale),box={x:p.x-labelWidth/2-3,y:labelY,w:labelWidth+6,h:(this.showAdm?font+subfont+6:font+3)};
-      if([...labels,...nodeBoxes.filter(b=>b.name!==n.name)].some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y))continue;labels.push(box);
-      c.fillStyle=match?'#ffcc8d':n.outside?'#8092a9':'#dce6f2';c.fillText(n.name,p.x,labelY);
-      if(this.showAdm){const text=sov?.adm!=null?sov.adm.toFixed(1)+'×'+(this.stale?'*':''):sov&&['faction','unclaimed'].includes(sov.kind)?'N/A':'—';c.font=`${subfont}px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`;c.fillStyle=this.stale?'#d9b573':match?'#ffb45e':'#55dfc5';c.fillText(text,p.x,labelY+font+2);}
+      const font=10*this.fontScale,subfont=9*this.fontScale;
+      const alliance=this.sovereigntyLabel?.(sov)??'Sovereignty unavailable';
+      const adm='ADM '+(sov?.adm!=null?sov.adm.toFixed(1)+'×'+(this.stale?'*':''):sov&&['faction','unclaimed'].includes(sov.kind)?'N/A':'—');
+      const family='-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+      c.font=`${font}px ${family}`;const systemWidth=c.measureText(n.name).width;
+      c.font=`${subfont}px ${family}`;
+      const labelWidth=Math.max(systemWidth,c.measureText(alliance).width,this.showAdm?c.measureText(adm).width:0)+8;
+      const height=font+subfont+7+(this.showAdm?subfont+3:0),gap=radius+6;
+      const candidates=[{x:p.x-labelWidth/2,y:p.y+gap},{x:p.x+gap,y:p.y-height/2},{x:p.x-labelWidth-gap,y:p.y-height/2},{x:p.x-labelWidth/2,y:p.y-gap-height}].map(v=>({...v,w:labelWidth,h:height}));
+      const obstacles=[...labels,...nodeBoxes.filter(b=>b.name!==n.name)];
+      const fits=box=>box.x>=0&&box.y>=0&&box.x+box.w<=w&&box.y+box.h<=h&&!obstacles.some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y);
+      const box=candidates.find(fits)??(n.name===this.selected?candidates[0]:null);if(!box)continue;labels.push(box);
+      const labelX=box.x+box.w/2,labelY=box.y+2;
+      c.fillStyle='#0a111be8';c.fillRect(box.x,box.y,box.w,box.h);
+      c.font=`${font}px ${family}`;c.fillStyle=match?'#ffcc8d':n.outside?'#8092a9':'#dce6f2';c.fillText(n.name,labelX,labelY);
+      c.font=`${subfont}px ${family}`;c.fillStyle='#aebcd0';c.fillText(alliance,labelX,labelY+font+3);
+      if(this.showAdm){c.fillStyle=this.stale?'#d9b573':match?'#ffb45e':'#55dfc5';c.fillText(adm,labelX,labelY+font+subfont+6);}
 
     }
   }

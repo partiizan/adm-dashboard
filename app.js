@@ -22,7 +22,7 @@ function allianceName(id){
   let entry=allianceNames.get(id);
   if(!entry||(!entry.pending&&!entry.name&&Date.now()>entry.retry)){
     entry={pending:true,retry:Date.now()+300000};allianceNames.set(id,entry);
-    fetch(`https://esi.evetech.net/alliances/${id}/`,{headers:{'X-Compatibility-Date':'2026-05-19'},signal:AbortSignal.timeout(15000)}).then(async response=>{if(!response.ok)throw new Error('Alliance unavailable');const data=await response.json();if(typeof data.name!=='string'||!data.name.trim())throw new Error('Missing name');entry.name=data.name;}).catch(()=>{}).finally(()=>{entry.pending=false;updateDetail();if(state.map?.hoverPoint)state.map.tooltip(state.map.hoverPoint);});
+    fetch(`https://esi.evetech.net/alliances/${id}/`,{headers:{'X-Compatibility-Date':'2026-05-19'},signal:AbortSignal.timeout(15000)}).then(async response=>{if(!response.ok)throw new Error('Alliance unavailable');const data=await response.json();if(typeof data.name!=='string'||!data.name.trim())throw new Error('Missing name');entry.name=data.name;}).catch(()=>{}).finally(()=>{entry.pending=false;state.map?.draw();updateDetail();if(state.map?.hoverPoint)state.map.tooltip(state.map.hoverPoint);});
   }
   return entry.name||(entry.pending?`Loading alliance ${id}…`:`Alliance ${id} · name unavailable`);
 }
