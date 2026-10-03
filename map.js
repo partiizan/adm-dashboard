@@ -1,7 +1,7 @@
-import {securityColor} from './core.js';
+import {securityColor,matchesAdm} from './core.js';
 export class StarMap {
   constructor(canvas, universe, onSelect) {
-    Object.assign(this,{canvas,universe,onSelect,scale:1,ox:0,oy:0,route:[],sov:new Map(),stale:true,showAdm:true,selected:null,points:new Map(),pointers:new Map()});
+    Object.assign(this,{canvas,universe,onSelect,scale:1,ox:0,oy:0,route:[],sov:new Map(),stale:true,showAdm:true,fontScale:1,admFilter:0,showSovereignty:false,logos:new Map(),selected:null,points:new Map(),pointers:new Map()});
     this.ctx=canvas.getContext('2d');
     new ResizeObserver(()=>{this.resize();}).observe(canvas.parentElement);
     canvas.addEventListener('wheel',e=>{e.preventDefault();const p=this.position(e);this.zoom(Math.exp(-e.deltaY*.0015),p);},{passive:false});
@@ -39,6 +39,7 @@ export class StarMap {
       if(e.key==='+'||e.key==='=')this.zoom(1.25);if(e.key==='-')this.zoom(.8);if(e.key.toLowerCase()==='f')this.fit();this.draw();
     });
   }
+  logo(id){if(!id)return null;let entry=this.logos.get(id);if(!entry){const image=new Image();entry={image,ready:false};this.logos.set(id,entry);image.onload=()=>{entry.ready=true;this.draw();};image.onerror=()=>{entry.failed=true;};image.src=`https://images.evetech.net/alliances/${id}/logo?size=64`;}return entry.ready?entry.image:null;}
   position(e){const r=this.canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
   resize(){const r=this.canvas.parentElement.getBoundingClientRect();if(r.width<1||r.height<1)return;this.width=r.width;this.height=r.height;const dpr=Math.min(devicePixelRatio||1,3);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);this.ctx.setTransform(dpr,0,0,dpr,0,0);this.fit();}
   setRegion(region){this.region=region;this.fit();}
@@ -52,14 +53,22 @@ export class StarMap {
     const edges=new Set();for(let i=1;i<this.route.length;i++){edges.add(this.route[i-1].name+'|'+this.route[i].name);edges.add(this.route[i].name+'|'+this.route[i-1].name);}
     for(const n of this.region.nodes){const sys=this.universe.lookup(n.name),start=this.points.get(n.name);for(const jump of sys.jumps){const end=this.points.get(jump);if(!end||n.name>=jump)continue;const r=edges.has(n.name+'|'+jump);c.beginPath();c.moveTo(start.x,start.y);c.lineTo(end.x,end.y);c.strokeStyle=r?'#55dfc5':'#344357';c.lineWidth=r?2.5:1;c.stroke();}}
     const circle=(p,r,color,width=1)=>{c.beginPath();c.arc(p.x,p.y,r,0,Math.PI*2);c.strokeStyle=color;c.lineWidth=width;c.stroke();};
-    c.textAlign='center';c.textBaseline='top';const labels=[];
+    c.textAlign='center';c.textBaseline='top';const labels=[];const nodeBoxes=[...this.points].map(([name,p])=>{const size=this.showSovereignty&&this.sov.get(this.universe.lookup(name).id)?.allianceId?14:6;return {name,x:p.x-size,y:p.y-size,w:size*2,h:size*2};});
     for(const n of [...this.region.nodes].sort((a,b)=>Number(b.name===this.selected)-Number(a.name===this.selected))){const p=this.points.get(n.name);if(p.x < -70||p.y < -35||p.x > w+70||p.y > h+35)continue;const sys=this.universe.lookup(n.name),sov=this.sov.get(sys.id);
-      if(n.name===this.selected)circle(p,9,'#edf6ff',1.6);
+      const logo=this.showSovereignty?this.logo(sov?.allianceId):null, radius=logo?12:4.2,match=matchesAdm(sov,this.admFilter);
+      if(match)circle(p,radius+6,'#ffb45e',2.5);
+      if(n.name===this.selected)circle(p,radius+3,'#edf6ff',1.6);
+      if(logo){c.fillStyle='#101c29';c.fillRect(p.x-13,p.y-13,26,26);c.drawImage(logo,p.x-12,p.y-12,24,24);}else{
       c.fillStyle='#0a111b';c.beginPath();c.arc(p.x,p.y,4.2,0,Math.PI*2);c.fill();circle(p,4.2,securityColor(sys.security),n.outside?1:1.7);
       if(!n.outside){c.fillStyle=securityColor(sys.security);c.beginPath();c.arc(p.x,p.y,1.5,0,Math.PI*2);c.fill();}
-      const box={x:p.x-n.name.length*3-3,y:p.y+7,w:n.name.length*6+6,h:this.showAdm?25:13};if(labels.some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y))continue;labels.push(box);
-      c.font='10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';c.fillStyle=n.outside?'#8092a9':'#dce6f2';c.fillText(n.name,p.x,p.y+8);
-      if(this.showAdm){const text=sov?.adm!=null?sov.adm.toFixed(1)+'×'+(this.stale?'*':''):sov&&['faction','unclaimed'].includes(sov.kind)?'N/A':'—';c.font='9px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';c.fillStyle=this.stale?'#d9b573':'#55dfc5';c.fillText(text,p.x,p.y+20);}
+      }
+      const font=10*this.fontScale,subfont=9*this.fontScale,labelY=p.y+radius+4;
+      c.font=`${font}px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`;
+      const labelWidth=Math.max(c.measureText(n.name).width,40*this.fontScale),box={x:p.x-labelWidth/2-3,y:labelY,w:labelWidth+6,h:(this.showAdm?font+subfont+6:font+3)};
+      if([...labels,...nodeBoxes.filter(b=>b.name!==n.name)].some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y))continue;labels.push(box);
+      c.fillStyle=match?'#ffcc8d':n.outside?'#8092a9':'#dce6f2';c.fillText(n.name,p.x,labelY);
+      if(this.showAdm){const text=sov?.adm!=null?sov.adm.toFixed(1)+'×'+(this.stale?'*':''):sov&&['faction','unclaimed'].includes(sov.kind)?'N/A':'—';c.font=`${subfont}px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif`;c.fillStyle=this.stale?'#d9b573':match?'#ffb45e':'#55dfc5';c.fillText(text,p.x,labelY+font+2);}
+
     }
   }
 }

@@ -28,8 +28,11 @@ export function parseSovereignty(data) {
     const alliance = row.claim?.alliance, d = alliance?.development, value = d?.activity_defense_multiplier;
     const index = n => Number.isInteger(n) && n >= 0 && n <= 5 ? n : null;
     return [row.solar_system_id, { kind: alliance ? 'alliance' : row.claim?.faction ? 'faction' : row.claim ? 'unknown' : 'unclaimed',
+      allianceId: Number.isInteger(alliance?.alliance_id)&&alliance.alliance_id>0?alliance.alliance_id:null,
       adm: typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 6 ? value : null,
       military: index(d?.military_level), industrial: index(d?.industrial_level), strategic: index(d?.strategic_level), capital: alliance?.is_capital_system === true }];
   }));
 }
 export const securityColor = n => n >= .45 ? '#74d6bd' : n > 0 ? '#eac076' : '#cb8fa5';
+
+export const matchesAdm = (sov, threshold) => [4,5].includes(threshold) && typeof sov?.adm === "number" && Number.isFinite(sov.adm) && sov.adm >= 1 && sov.adm < threshold;

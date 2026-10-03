@@ -1,16 +1,16 @@
-import {makeUniverse,route,parseSovereignty,securityColor} from './core.js';
+import {makeUniverse,route,parseSovereignty,securityColor,matchesAdm} from './core.js';
 import {StarMap} from './map.js';
 const $=id=>document.getElementById(id);
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback;}catch{return fallback;}};
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Private mode or full storage: session still works. */}};
 const prefs=read('smt-atlas-prefs',{}),cache=read('smt-atlas-adm',null);
 const state={universe:null,map:null,region:null,selected:null,sov:new Map(),checked:null,etag:null,stale:true,nextCheck:0,fetching:false};
-function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked});}
+function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked,fontScale:Number($('font-scale').value),admFilter:Number($('adm-filter').value),showSovereignty:$('show-sovereignty').checked});}
 function el(tag,text,cls){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;}
 function panel(name){document.querySelector('.workspace').dataset.panel=name;for(const b of document.querySelectorAll('[data-panel].mobile-nav button, .mobile-nav button'))b.classList.toggle('active',b.dataset.panel===name);}
 for(const button of document.querySelectorAll('.mobile-nav button'))button.addEventListener('click',()=>panel(button.dataset.panel));
 $('about-open').onclick=()=>$('about').showModal();$('about-close').onclick=()=>$('about').close();
-function chooseRegion(name){const region=state.universe.regions.find(r=>r.name===name);if(!region)return;state.region=region;$('region').value=name;$('region-name').textContent=name;$('region-summary').textContent=`${region.nodes.filter(n=>!n.outside).length} systems · Stargate network`;state.map.setRegion(region);save();}
+function chooseRegion(name){const region=state.universe.regions.find(r=>r.name===name);if(!region)return;state.region=region;$('region').value=name;$('region-name').textContent=name;$('region-summary').textContent=`${region.nodes.filter(n=>!n.outside).length} systems · Stargate network`;state.map.setRegion(region);updateFilter();save();}
 function selectSystem(name,showMap=false){const s=state.universe.lookup(name);if(!s)return;state.selected=s;state.map.selected=s.name;
   if(!state.region?.nodes.some(n=>n.name===s.name)){const r=state.universe.regions.find(r=>r.name===s.region)||state.universe.regions.find(r=>r.nodes.some(n=>n.name===s.name));if(r)chooseRegion(r.name);}
   $('system-name').textContent=s.name;$('system-info').textContent=`${s.region}\nSecurity ${s.security.toFixed(2)} · ${s.jumps.length} gates`+(s.station?'\nNPC station present':'');$('set-start').disabled=$('set-end').disabled=false;updateDetail();state.map.draw();save();
@@ -20,7 +20,9 @@ function updateDetail(){const s=state.selected;if(!s)return;const v=state.sov.ge
   if(!v){box.textContent='ADM · unavailable / not reported';return;}
   box.textContent=v.adm!=null?`ADM ${v.adm.toFixed(1)}×${state.stale?' · cached/old':''}\nMilitary ${v.military??'—'} · Industry ${v.industrial??'—'}\nStrategic ${v.strategic??'—'}${v.capital?' · Capital':''}`:['faction','unclaimed'].includes(v.kind)?'ADM · N/A (no applicable sov ADM)':'ADM · not reported by ESI';
 }
-function applySov(){if(!state.map)return;state.map.sov=state.sov;state.map.stale=state.stale;state.map.draw();updateDetail();$('feed-dot').classList.toggle('fresh',!state.stale);}
+function updateFilter(){if(!state.region)return;const threshold=Number($('adm-filter').value);const count=state.region.nodes.filter(n=>!n.outside&&matchesAdm(state.sov.get(state.universe.lookup(n.name).id),threshold)).length;$('filter-status').textContent=threshold?`${count} systems in this region below ${threshold.toFixed(1)} · orange rings${state.stale?' · cached/unverified data':''}. Missing ADM is excluded.`:'No ADM highlight filter.';}
+function displayOptions(){const scale=Number($('font-scale').value);document.documentElement.style.setProperty('--font-scale',scale);state.map.fontScale=scale;state.map.admFilter=Number($('adm-filter').value);state.map.showSovereignty=$('show-sovereignty').checked;updateFilter();state.map.draw();save();}
+function applySov(){if(!state.map)return;state.map.sov=state.sov;state.map.stale=state.stale;state.map.draw();updateFilter();updateDetail();$('feed-dot').classList.toggle('fresh',!state.stale);}
 const utc=time=>new Date(time).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});
 async function refreshAdm(){
   if(state.fetching)return;
@@ -51,6 +53,7 @@ async function init(){
   const u=state.universe;state.map=new StarMap($('map'),u,name=>selectSystem(name));
   $('region').replaceChildren(...[...u.regions].sort((a,b)=>a.name.localeCompare(b.name)).map(r=>{const o=el('option',r.name);o.value=r.name;return o;}));$('region').disabled=false;
   $('route-from').value=prefs.from||'';$('route-to').value=prefs.to||'';$('high-sec').checked=!!prefs.high;$('show-adm').checked=prefs.showAdm!==false;state.map.showAdm=$('show-adm').checked;
+  $('font-scale').value=[1,1.25,1.5].includes(prefs.fontScale)?String(prefs.fontScale):'1';$('adm-filter').value=[4,5].includes(prefs.admFilter)?String(prefs.admFilter):'0';$('show-sovereignty').checked=!!prefs.showSovereignty;for(const id of ['font-scale','adm-filter','show-sovereignty'])$(id).onchange=displayOptions;displayOptions();
   chooseRegion(u.regions.some(r=>r.name===prefs.region)?prefs.region:'Delve');if(prefs.selected)selectSystem(prefs.selected);
   $('data-summary').textContent=`${u.systems.length.toLocaleString()} systems · ${u.regions.length} regional maps · Public ESI`;$('map-loading').hidden=true;
   $('region').onchange=()=>chooseRegion($('region').value);

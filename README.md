@@ -1,4 +1,4 @@
-# ADM Dashboard — Web beta 0.4
+# ADM Dashboard — Web beta 0.5
 
 A static browser companion for EVE Online, designed for GitHub Pages. Includes 5,202 systems across 68 regional maps, shortest stargate routing, live public sovereignty ADM and development indexes. No ESI login or server required.
 
@@ -32,3 +32,7 @@ Unofficial project; not endorsed by CCP or SMT's maintainers. EVE Online belongs
 
 
 Settings and public ADM cache remain in browser storage. This dashboard does not access local files or ingest intel.
+
+## Display controls
+
+Font size scales interface text and map labels to 100%, 125%, or 150%. ADM highlighting marks systems strictly below 5.0 or 4.0 with orange rings; missing/NPC ADM is excluded and cached results are labeled. Alliance logos can replace map nodes using the alliance ID in public sovereignty data and CCP’s image server; unavailable logos fall back to nodes. All display settings are remembered in this browser.
