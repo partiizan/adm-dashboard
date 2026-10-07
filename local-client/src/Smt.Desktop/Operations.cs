@@ -25,6 +25,13 @@ public partial class MainWindow
     private static void Browse(string url)=>Process.Start(new ProcessStartInfo(url){UseShellExecute=true});
     private void InitializeOperations()
     {
+        try
+        {
+            var shipPath=Path.Combine(AppContext.BaseDirectory,"data","ship-types.json");
+            if(!File.Exists(shipPath))shipPath=Path.Combine(AppContext.BaseDirectory,"..","Resources","data","ship-types.json");
+            foreach(var entry in JsonSerializer.Deserialize<Dictionary<long,string>>(File.ReadAllText(shipPath))??[])ships[entry.Key]=entry.Value;
+        }
+        catch(Exception e) when(e is IOException or JsonException){SetStatus("Ship names unavailable; using type IDs.");}
         characters=new(liveApi,new MacKeychain(),SettingsStore.Folder);characters.Load();situation=new(liveApi,universe);
         Get<TextBox>("ClientIdBox").Text=settings.ClientId;
         Get<ComboBox>("RouteMode").ItemsSource=new[]{"Stargates", "Gates + Ansiblex", "Capital jumps"};Get<ComboBox>("RouteMode").SelectedIndex=0;
@@ -62,7 +69,7 @@ public partial class MainWindow
     {
         bool capital=Get<ComboBox>("RouteMode").SelectedIndex==2;
         Get<ComboBox>("ShipPicker").IsVisible=capital;Get<NumericUpDown>("Calibration").IsVisible=capital;Get<TextBlock>("JumpRangeLabel").IsVisible=capital;
-        Get<CheckBox>("HighSecOnly").IsEnabled=!capital;
+        Get<CheckBox>("HighSecOnly").IsVisible=!capital;
         Get<TextBlock>("JumpRangeLabel").Text=$"Maximum {Navigation.Range(Math.Max(0,Get<ComboBox>("ShipPicker").SelectedIndex),(int)(Get<NumericUpDown>("Calibration").Value??5)):0.0} LY per jump";
     }
     private static string[] Names(string? value)=>(value??"").Split(',',StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries);
@@ -107,6 +114,7 @@ public partial class MainWindow
         loginCancel=CancellationTokenSource.CreateLinkedTokenSource(closing.Token);Get<Button>("LoginCharacter").IsEnabled=false;Get<Button>("CancelLogin").IsEnabled=true;
         try
         {
+            while(characterBusy)await Task.Delay(100,loginCancel.Token);
             settings=settings with{ClientId=Get<TextBox>("ClientIdBox").Text?.Trim()??""};Save();Get<TextBlock>("CharacterStatus").Text="Complete login in your browser. Waiting up to 4 minutes…";
             await characters.Login(settings.ClientId,Browse,loginCancel.Token);RefreshPilots();Get<TextBlock>("CharacterStatus").Text="Character connected. Updating location…";await RefreshCharacters();
         }
@@ -116,7 +124,7 @@ public partial class MainWindow
     }
     private async Task RefreshCharacters()
     {
-        if(characterBusy || closing.IsCancellationRequested || characters.Characters.Count==0)return;characterBusy=true;
+        if(characterBusy || loginCancel!=null || closing.IsCancellationRequested || characters.Characters.Count==0)return;characterBusy=true;Get<Button>("RemoveCharacter").IsEnabled=false;
         var errors=new List<string>();
         try
         {
@@ -139,7 +147,7 @@ public partial class MainWindow
             RefreshPilots();ApplyLive();Get<TextBlock>("CharacterStatus").Text=errors.Count>0?string.Join('\n',errors):$"{characters.Characters.Count} characters · checked {DateTimeOffset.UtcNow:HH:mm:ss} UTC";
             if(Get<CheckBox>("FollowCharacter").IsChecked==true && activeCharacter is {} id && pilots.TryGetValue(id,out var follow))FocusPilot(follow);
         }
-        finally{characterBusy=false;}
+        finally{characterBusy=false;Get<Button>("RemoveCharacter").IsEnabled=true;}
     }
     private PilotItem PilotRow(Pilot p)=>new(p with{Name=names.GetValueOrDefault(p.Id,p.Name)},universe.ById.TryGetValue(p.SystemId,out var s)?s.Name:p.SystemId==0?"Location unavailable":$"System {p.SystemId}",ships.GetValueOrDefault(p.ShipType,$"Type {p.ShipType}"));
     private void RefreshPilots()

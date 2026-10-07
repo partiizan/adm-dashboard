@@ -5,6 +5,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8" />
+    <Content Include="../../data/ship-types.json" Link="data/ship-types.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="../../data/universe.json" Link="data/universe.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

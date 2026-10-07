@@ -20,3 +20,6 @@ sha = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], tex
 data = dict(source='https://github.com/Slazanger/SMT', commit=sha, systems=systems, regions=regions)
 out.write_text(json.dumps(data, separators=(',', ':')))
 print(f'{len(systems)} systems, {len(regions)} regional layouts → {out}')
+
+ships = {i.findtext('key/string'): i.findtext('value/string') for i in ET.parse(root / 'EVEData/data/ShipTypes.dat').getroot()}
+out.with_name('ship-types.json').write_text(json.dumps(ships, separators=(',', ':')))

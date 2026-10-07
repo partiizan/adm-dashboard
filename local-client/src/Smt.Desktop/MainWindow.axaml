@@ -28,19 +28,21 @@
       <TextBlock Text="ROUTE PLANNER" Classes="caption" Margin="0,10,0,0"/>
       <TextBox Name="FromBox" Watermark="Starting system"/>
       <TextBox Name="ToBox" Watermark="Destination system"/>
-      <TextBox Name="WaypointsBox" Watermark="Waypoints, comma separated"/>
-      <TextBox Name="AvoidBox" Watermark="Avoid systems, comma separated"/>
       <ComboBox Name="RouteMode" HorizontalAlignment="Stretch"/>
       <ComboBox Name="ShipPicker" HorizontalAlignment="Stretch"/>
       <NumericUpDown Name="Calibration" Minimum="0" Maximum="5" Value="5" FormatString="'JDC '0"/>
       <TextBlock Name="JumpRangeLabel" Classes="muted" FontSize="11"/>
-      <Button Name="ImportBridges" Content="Import Ansiblex CSV…"/>
-      <Button Name="ClearBridges" Content="Clear Ansiblex network"/>
-      <TextBlock Name="BridgeStatus" Text="No Ansiblex network imported" Classes="muted" TextWrapping="Wrap" FontSize="11"/>
       <CheckBox Name="HighSecOnly" Content="High-security systems only" FontSize="11"/>
       <Grid ColumnDefinitions="*,Auto"><Button Name="PlanRoute" Content="Plot route" Classes="primary" HorizontalAlignment="Stretch"/><Button Name="ClearRoute" Grid.Column="1" Content="×" Margin="6,0,0,0" ToolTip.Tip="Clear route"/></Grid>
       <TextBlock Name="RouteSummary" Text="Choose gates, Ansiblex, or capital jumps." Classes="muted" FontSize="11" TextWrapping="Wrap"/>
       <ListBox Name="RouteList" MaxHeight="220" FontSize="11"/>
+      <Expander Header="Waypoints &amp; exclusions" HorizontalAlignment="Stretch"><StackPanel Spacing="8">      <TextBox Name="WaypointsBox" Watermark="Waypoints, comma separated"/>
+      <TextBox Name="AvoidBox" Watermark="Avoid systems, comma separated"/>
+</StackPanel></Expander>
+      <Expander Header="Ansiblex network" HorizontalAlignment="Stretch"><StackPanel Spacing="8">      <Button Name="ImportBridges" Content="Import Ansiblex CSV…"/>
+      <Button Name="ClearBridges" Content="Clear Ansiblex network"/>
+      <TextBlock Name="BridgeStatus" Text="No Ansiblex network imported" Classes="muted" TextWrapping="Wrap" FontSize="11"/>
+</StackPanel></Expander>
       <Border BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="0,16,0,0" Margin="0,8,0,0">
        <StackPanel Spacing="8"><TextBlock Text="MAP KEY" Classes="caption"/><TextBlock FontSize="11"><Run Text="●  High sec     " Foreground="#75D3BF"/><Run Text="●  Low sec" Foreground="#EBC077"/></TextBlock><TextBlock FontSize="11"><Run Text="●  Null sec       " Foreground="#C78C9B"/><Run Text="◎  Intel report" Foreground="#FF997E"/></TextBlock><TextBlock Text="Cyan line  ·  Planned route" Foreground="#55DFC5" FontSize="11"/><TextBlock Text="Ring = recent report, not a verified threat. Clear reports are shown in green." Classes="muted" FontSize="10" TextWrapping="Wrap"/></StackPanel>
       </Border>
