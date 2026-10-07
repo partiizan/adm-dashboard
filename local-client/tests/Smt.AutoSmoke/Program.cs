@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Smt.Core;
 using Smt.Desktop;
 using System.Text;
@@ -83,12 +84,16 @@ try
  foreach(var name in new[]{"FromBox","ToBox"})
  {
      var box=window.FindControl<AutoCompleteBox>(name)!;
-     box.Focus();box.Text="p-z";
+     var input=box.GetVisualDescendants().OfType<TextBox>().Single();
+     input.Focus();input.SelectAll();window.TextInput("p");
+     await PumpUntil(()=>box.IsDropDownOpen,name+" suggests from the first character");
+     window.TextInput("-z");
      await PumpUntil(()=>box.IsDropDownOpen,name+" opens prefix suggestions");
      var matches=box.ItemsSource!.Cast<string>().Where(n=>box.TextFilter!("p-z",n)).ToArray();
      if(!matches.Contains("P-ZMZV") || matches.Any(n=>!n.StartsWith("p-z",StringComparison.OrdinalIgnoreCase)))
          throw new Exception("Incorrect autocomplete matches");
-     box.SelectedItem="P-ZMZV";await Task.Delay(100);
+     window.KeyPress(Avalonia.Input.Key.Down);
+     window.KeyPress(Avalonia.Input.Key.Enter);await Task.Delay(100);
      if(box.Text!="P-ZMZV")throw new Exception("Suggestion did not fill route field");
      box.IsDropDownOpen=false;
  }
