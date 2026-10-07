@@ -181,12 +181,16 @@ public partial class MainWindow : Window
         }
         catch(Exception e) { SetStatus("Could not open folder: "+e.Message); }
     }
+    private static string DisplayLogPath(string path)
+    {
+        var home=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd(Path.DirectorySeparatorChar);
+        return path.StartsWith(home+Path.DirectorySeparatorChar,StringComparison.Ordinal)?"~"+path[home.Length..]:path;
+    }
     private void UpdateWatchState()
     {
         string mode=string.IsNullOrWhiteSpace(settings.LogFolder)?"Automatic · current user":"Custom folder";
         var path=tailer?.Folder??LogFolderLocator.Resolve(settings.LogFolder);
-        var home=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd(Path.DirectorySeparatorChar);
-        var displayPath=path.StartsWith(home+Path.DirectorySeparatorChar,StringComparison.Ordinal)?"~"+path[home.Length..]:path;
+        var displayPath=DisplayLogPath(path);
         ToolTip.SetTip(Get<TextBlock>("IntelState"),path);
         Get<TextBlock>("IntelState").Text=demo?"Demo mode · live monitoring suspended":paused?"Paused · reports still expire":$"{mode} · scanning every 2 seconds\n{displayPath}";
     }
@@ -222,11 +226,11 @@ public partial class MainWindow : Window
 
         }
         catch(DirectoryNotFoundException)
-        { Get<TextBlock>("IntelDiagnostics").Text="Folder not found. Waiting for EVE to create it."; Get<TextBlock>("IntelState").Text="Waiting for EVE chat logs · checking every 2 seconds\n"+current.Folder; SetStatus("Open EVE with chat logging enabled. Use Change folder only if your logs are stored elsewhere."); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Folder not found. Waiting for EVE to create it."; Get<TextBlock>("IntelState").Text="Waiting for EVE chat logs · checking every 2 seconds\n"+DisplayLogPath(current.Folder); SetStatus("Open EVE with chat logging enabled. Use Change folder only if your logs are stored elsewhere."); }
         catch(UnauthorizedAccessException)
-        { Get<TextBlock>("IntelDiagnostics").Text="Cannot read the folder: Documents permission is needed."; Get<TextBlock>("IntelState").Text="Documents access needed · retrying\n"+current.Folder; SetStatus("Allow SMT Mac Beta to read Documents when macOS asks, or grant Documents access in System Settings → Privacy & Security → Files and Folders."); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Cannot read the folder: Documents permission is needed."; Get<TextBlock>("IntelState").Text="Documents access needed · retrying\n"+DisplayLogPath(current.Folder); SetStatus("Allow SMT Mac Beta to read Documents when macOS asks, or grant Documents access in System Settings → Privacy & Security → Files and Folders."); }
         catch(Exception e) when(e is IOException or System.Text.RegularExpressions.RegexMatchTimeoutException)
-        { Get<TextBlock>("IntelDiagnostics").Text="Read failed: "+e.Message; Get<TextBlock>("IntelState").Text="Log access error · retrying\n"+current.Folder; SetStatus(e.Message); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Read failed: "+e.Message; Get<TextBlock>("IntelState").Text="Log access error · retrying\n"+DisplayLogPath(current.Folder); SetStatus(e.Message); }
         finally { polling=false; }
     }
     private void AddReport(IntelReport report)
