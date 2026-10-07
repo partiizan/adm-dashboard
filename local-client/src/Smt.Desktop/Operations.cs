@@ -75,8 +75,8 @@ public partial class MainWindow
             var waypoints=Names(Get<TextBox>("WaypointsBox").Text);var avoid=new HashSet<string>(Names(Get<TextBox>("AvoidBox").Text),StringComparer.OrdinalIgnoreCase);
             int mode=Get<ComboBox>("RouteMode").SelectedIndex;bool high=mode!=2 && Get<CheckBox>("HighSecOnly").IsChecked==true;
             double? range=mode==2?Navigation.Range(Get<ComboBox>("ShipPicker").SelectedIndex,(int)(Get<NumericUpDown>("Calibration").Value??5)):null;
-            var network=mode==1?bridges:[];
-            var route=await Task.Run(()=>Navigation.Plan(universe,from,to,waypoints,avoid,high,network,range));
+            var network=mode==1?bridges:[];var highsecStart=Get<ComboBox>("ShipPicker").SelectedIndex is 2 or 4;
+            var route=await Task.Run(()=>Navigation.Plan(universe,from,to,waypoints,avoid,high,network,range,highsecStart));
             if(closing.IsCancellationRequested)return;
             Map.Route=route.Systems;Map.RouteLegs=route.Legs;
             Get<ListBox>("RouteList").ItemsSource=route.Systems.Select((s,i)=>new LiveItem(s.Name,i==0?$"START  {s.Name}":$"{i:00}  {s.Name}\n{route.Legs[i-1].Kind}"+(mode==2?$" · {route.Legs[i-1].LightYears:0.00} LY":""))).ToArray();
