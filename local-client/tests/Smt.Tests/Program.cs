@@ -73,7 +73,7 @@ try
  Check(LogFolderLocator.Resolve("~/custom",autoHome,"")==Path.Combine(autoHome,"custom"),"Custom home-relative override expands universally");
  Check(LogFolderLocator.Resolve("/custom/logs",autoHome,"")=="/custom/logs","Saved custom folder takes precedence");
  var caps=Path.Combine(autoHome,"Documents","EVE","logs","Chatlogs");Directory.Move(expected,caps);
- Check(LogFolderLocator.Resolve(home:autoHome,documents:"")==caps,"Chatlogs capitalization is detected on case-sensitive volumes");
+ Check(File.Exists(Path.Combine(LogFolderLocator.Resolve(home:autoHome,documents:""),"Alliance_20261007.txt")),"Chatlogs capitalization resolves to the actual logs on this filesystem");
  Check(LogFolderLocator.Resolve(home:autoHome+"-other",documents:"")!=expected,"Another username gets its own default folder");
  File.WriteAllText(Path.Combine(caps,"blocked.txt"),Stamp("Jita clear")+"\n");
  using(var locked=new FileStream(Path.Combine(caps,"blocked.txt"),FileMode.Open,FileAccess.ReadWrite,FileShare.None))
