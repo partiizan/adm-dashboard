@@ -11,7 +11,7 @@ var folder=LogFolderLocator.Resolve();
 if(Directory.Exists(folder)||File.Exists(SettingsStore.PathName)) throw new Exception("Auto smoke requires a clean runner profile");
 AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
 var window=new MainWindow();window.Show();
-async Task await PumpUntil(Func<bool> condition,string label)
+async Task PumpUntil(Func<bool> condition,string label)
 {
  var wait=System.Diagnostics.Stopwatch.StartNew();
  while(!condition()&&wait.Elapsed<TimeSpan.FromSeconds(12)) { await Task.Delay(100); }
