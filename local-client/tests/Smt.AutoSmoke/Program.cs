@@ -75,8 +75,17 @@ try
  routeList.RaiseEvent(new Avalonia.Input.KeyEventArgs{RoutedEvent=Avalonia.Input.InputElement.KeyDownEvent,Key=Avalonia.Input.Key.Enter});
  if(window.FindControl<TextBlock>("RegionTitle")!.Text!="The Forge")throw new Exception("Explicit system activation failed");
  regionPicker.SelectedItem=regions.First(r=>r.Name=="Period Basis");
- regionPicker.IsDropDownOpen=true;await Task.Delay(100);
- regionPicker.SelectedItem=regions.First(r=>r.Name=="Delve");regionPicker.IsDropDownOpen=false;
+ regionPicker.Focus();
+ window.KeyPressQwerty(Avalonia.Input.PhysicalKey.F4,Avalonia.Input.RawInputModifiers.None);
+ await Task.Delay(100);
+ if(!regionPicker.IsDropDownOpen)throw new Exception("Region dropdown did not open");
+ var nextRegion=regions[regionPicker.SelectedIndex+1].Name;
+ window.KeyPressQwerty(Avalonia.Input.PhysicalKey.ArrowDown,Avalonia.Input.RawInputModifiers.None);
+ window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter,Avalonia.Input.RawInputModifiers.None);
+ if(regionPicker.IsDropDownOpen || window.FindControl<TextBlock>("RegionTitle")!.Text!=nextRegion)
+     throw new Exception("Cannot select another region from Period Basis dropdown");
+ Console.WriteLine("PASS: Region dropdown opens and accepts a different region via keyboard");
+ regionPicker.SelectedItem=regions.First(r=>r.Name=="Delve");
  await Task.Delay(6500);
  if(window.FindControl<TextBlock>("RegionTitle")!.Text!="Delve" || SettingsStore.Load().Region!="Delve")
      throw new Exception("Region selection did not survive refresh");
@@ -85,15 +94,15 @@ try
  {
      var box=window.FindControl<AutoCompleteBox>(name)!;
      var input=box.GetVisualDescendants().OfType<TextBox>().Single();
-     input.Focus();input.SelectAll();window.TextInput("p");
+     input.Focus();input.SelectAll();window.KeyTextInput("p");
      await PumpUntil(()=>box.IsDropDownOpen,name+" suggests from the first character");
-     window.TextInput("-z");
+     window.KeyTextInput("-z");
      await PumpUntil(()=>box.IsDropDownOpen,name+" opens prefix suggestions");
      var matches=box.ItemsSource!.Cast<string>().Where(n=>box.TextFilter!("p-z",n)).ToArray();
      if(!matches.Contains("P-ZMZV") || matches.Any(n=>!n.StartsWith("p-z",StringComparison.OrdinalIgnoreCase)))
          throw new Exception("Incorrect autocomplete matches");
-     window.KeyPress(Avalonia.Input.Key.Down);
-     window.KeyPress(Avalonia.Input.Key.Enter);await Task.Delay(100);
+     window.KeyPressQwerty(Avalonia.Input.PhysicalKey.ArrowDown,Avalonia.Input.RawInputModifiers.None);
+     window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter,Avalonia.Input.RawInputModifiers.None);await Task.Delay(100);
      if(box.Text!="P-ZMZV")throw new Exception("Suggestion did not fill route field");
      box.IsDropDownOpen=false;
  }
