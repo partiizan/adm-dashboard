@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p /tmp/SMT-Mac-Beta-0.6/source
           cp -R 'dist/osx-arm64/SMT Mac Beta.app' /tmp/SMT-Mac-Beta-0.6/
-          cp README.md UPSTREAM-LICENSE.txt /tmp/SMT-Mac-Beta-0.6/
+          cp README.md UPSTREAM-LICENSE.txt ansiblex-template.csv /tmp/SMT-Mac-Beta-0.6/
           rsync -a --exclude bin --exclude obj --exclude dist ./ /tmp/SMT-Mac-Beta-0.6/source/
           ditto -c -k --sequesterRsrc --keepParent /tmp/SMT-Mac-Beta-0.6 /tmp/SMT-Mac-Beta-0.6-AppleSilicon.zip
       - uses: actions/upload-artifact@v4
@@ -42,3 +42,8 @@ jobs:
           name: SMT-Mac-Beta-0.6-AppleSilicon
           path: /tmp/SMT-Mac-Beta-0.6-AppleSilicon.zip
           retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SMT-v06-previews
+          path: local-client/screenshots/*.png
+          retention-days: 7

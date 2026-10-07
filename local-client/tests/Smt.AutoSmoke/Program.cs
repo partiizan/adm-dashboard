@@ -45,6 +45,7 @@ try
  Directory.CreateDirectory("screenshots");
  await Task.Delay(300);
  using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v06-intel.png");
+ for(int tab=1;tab<=2;tab++){window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=tab;await Task.Delay(300);using var frame=window.CaptureRenderedFrame();frame?.Save($"screenshots/v06-tab{tab}.png");}
  Console.WriteLine("Automatic desktop ingestion smoke checks passed on "+System.Runtime.InteropServices.RuntimeInformation.OSDescription);
 }
 catch(Exception error) { failure=error; }

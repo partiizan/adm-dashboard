@@ -59,7 +59,7 @@
     </StackPanel>
    </Grid>
    <Border Grid.Column="2" BorderBrush="#243143" BorderThickness="1,0,0,0" Padding="18">
-<TabControl><TabItem Header="Intel">    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+<TabControl Name="OperationsTabs"><TabItem Header="Intel">    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
      <StackPanel Spacing="7"><TextBlock Text="Intel stream" FontSize="20" FontWeight="SemiBold"/><TextBlock Name="IntelState" Text="Automatically locating EVE chat logs…" Classes="muted" FontSize="11" TextWrapping="Wrap"/>
       <Button Name="ChooseLogs" Content="Change log folder…" HorizontalAlignment="Stretch"/>
       <Button Name="AutoLogs" Content="Use automatic EVE folder" HorizontalAlignment="Stretch"/>

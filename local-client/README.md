@@ -1,81 +1,106 @@
-# SMT Mac Beta · 0.3.0
+# SMT Mac Beta 0.6 — Apple Silicon
 
-An unofficial, experimental Apple Silicon desktop prototype based on the data in Slazanger's EVE Map Tool. It is a new Avalonia frontend and portable core, **not a complete port of SMT**. No affiliation or endorsement by Slazanger or CCP is implied.
+A native macOS beta built from the local v0.3 client, covering the planned v0.4–v0.6 feature groups. Includes the self-contained `.app`; no Terminal launcher or .NET installation is required.
 
-## Try the included application
+## Install
 
-1. Quit the previous beta. Extract the ZIP and drag **SMT Mac Beta.app** to Applications, replacing the previous copy if present.
-2. Double-click **SMT Mac Beta.app**. It is a compiled, self-contained Apple Silicon application, already ad-hoc signed. No shell launcher, Terminal command, or .NET installation is needed.
-3. This prototype has no Apple Developer ID/notarization. If macOS blocks it, approve this specific app through **System Settings → Privacy & Security → Open Anyway**, if offered, then open it again. Do not disable global security settings.
-4. ADM loads automatically from CCP's public ESI service; no account login is required. Toggle **ADM** above the map to show or hide the labels. Click a system for ADM and the military, industrial, and strategic indexes.
-5. Click **Try demo** to explore Delve with synthetic intel reports. ADM remains real ESI data even in intel demo mode. Exit demo to resume local log monitoring.
-6. Intel starts automatically from `~/Documents/EVE/logs/chatlogs`, using the current macOS account. Allow Documents access if macOS asks. No connector or ESI login is required. A saved custom folder from v0.2 is still honored; click **Use automatic EVE folder** to return to the standard location. **Change log folder…** is only needed for a nonstandard installation.
-7. If the folder does not exist yet, the app waits and retries every two seconds. Start EVE with chat logging enabled and join your intel channels. Log content stays on your Mac.
+1. Quit the previous SMT Mac Beta.
+2. Unzip the package and move **SMT Mac Beta.app** into Applications, replacing the earlier beta.
+3. Open the app. This is ad-hoc signed, not Apple-notarized. If macOS blocks it, use System Settings → Privacy & Security → Open Anyway after reviewing the app's origin.
+4. Allow Documents access when requested. Intel automatically scans `~/Documents/EVE/logs/chatlogs` every two seconds. If an old custom folder was saved, click **Use automatic EVE folder**.
 
-The bundle is self-contained: no .NET installation required for running it. Target: Apple Silicon, macOS 12 or newer, subject to real-machine validation. Intel Macs require a separate `osx-x64` build from source.
+Existing region and log settings are retained. Login is optional. Public ADM, activity, wormholes, storms, kills and local logs work without it.
 
-## What works in this build
+## What's included
 
-- Public ESI ADM labels (1.0–6.0×), development indexes and capital-system indicator. Automatic five-minute checks, ETag revalidation, server rate-limit handling and persistent cached values. Cached/unverified values are explicitly marked; N/A means no applicable sovereignty ADM and — means unavailable/not reported.
-- 5,202 systems and 68 regional layouts from the pinned SMT snapshot.
-- Region selection, mouse/trackpad scrolling to zoom, dragging to pan, and Fit.
-- System search across all regions; click a node or search result to inspect it.
-- Shortest stargate routing across regions, with an optional high-security-only restriction. Set endpoints from selected systems or type their complete names. Click route steps to view their regions.
-- Local intel ingestion, polling every two seconds. UTF-8, UTF-16LE and UTF-16BE log files are supported. Split writes are buffered; rotated/new files are discovered.
-- Exact full system-name matching, manual reports, recent-intel highlighting and reported-clear indicators.
-- Settings persist locally. Logs are read only. No log data or credentials are uploaded. The app requests only the public sovereignty dataset from `https://esi.evetech.net/sovereignty/systems`, using compatibility date `2026-05-19`.
+| Area | Beta behavior |
+|---|---|
+| Characters | Browser-based EVE SSO with PKCE; multiple characters; location, ship and online status; select/follow on the map; reconnect and disconnect |
+| Credentials | Refresh tokens in native macOS Keychain; signature/audience/expiry validation; automatic access-token refresh |
+| Fleet | Fleet member locations and ships where ESI authorizes the connected character, normally the fleet boss; roster selection focuses the map |
+| Kills | zKillboard R2Z2 feed from connection onward; current-region list; recent kill markers; double-click opens the killmail |
+| Activity | ESI last-hour ship/pod/NPC kills and ship jumps; proportional map rings; counts on selected-system details |
+| Wormholes | Public Eve-Scout Thera/Turnur connection lists, known-space endpoint markers, signatures, ship-size limit and expiry |
+| Storms | Eve-Scout Rescue storm centers/types; strong one-gate and weak three-gate areas |
+| Ansiblex | Import bidirectional links from a simple CSV; persist the network; purple map links; optional inclusion in shortest-hop routing |
+| Capitals | Hull class and Jump Drive Calibration; real 3D light-year distances; minimum-jump routes; per-leg and total LY; highsec destinations and Pochven excluded |
+| Route control | Ordered comma-separated waypoints and avoided systems; gate-only, gates+Ansiblex, or capital routing |
+| Existing features | Regional map, search, public sovereignty ADM/indexes, automatic local intel, channel filtering and manual reports |
 
-## Boundaries that matter
+## One-time EVE SSO setup
 
-- **No EVE SSO, character/location tracking, kill feeds, alerts/sound, Ansiblex routing, overlays, or global shortcuts in 0.3.** This is the map/intel foundation for those later features.
-- The bundled map is a static upstream snapshot. Verify routes in game. Only listed stargates participate in routing; no jump bridges, wormholes or jump-drive paths. The high-sec option uses SMT's security threshold of 0.45.
-- Intel is text reported by people, not confirmed hostiles or confirmed safety. The parser recognizes exact system names, including names containing spaces; abbreviated names are not resolved. Ordinary words that are also system names may match.
-- Recent reports within 15 minutes are ingested when monitoring starts; older reports are not replayed. Files not modified in two days are ignored. Up to the last 1 MiB of historical content is read initially. The UI retains at most 500 reports and displays the newest 100. Map rings expire after 15 minutes even while paused.
-- A report mentioning multiple systems applies its reported-clear status to all those names. Mixed clear/hostile sentences are conservatively treated as reports. Use manual correction if text is ambiguous.
-- Demo mode suspends live monitoring and clears its synthetic reports when exited. Demo and real reports are not mixed.
-- Test with your actual EVE client and chat channels before relying on it. The user confirmed 0.1 runs correctly on their Mac. v0.3 is built and tested on a macOS CI runner; actual EVE-generated files and macOS Documents permission prompts still need confirmation on your Mac.
+No shared EVE application client ID has been registered for this beta. Before testing characters/fleets:
 
-## Validation performed
+1. Open https://developers.eveonline.com/applications and register a native / PKCE application.
+2. Set this callback **exactly**, including the trailing slash:
 
-- Release compilation and self-contained `osx-arm64` publication.
-- Automated core checks (including automatic folder discovery, late folder creation, username-independent paths, override handling and locked-file isolation): real map references, known routes, adjacency, high-sec restrictions, search, exact/multiword intel matching, timestamps, encoding, incremental reads, incomplete lines, truncation and new files; plus ADM parsing, missing/NPC values, cache revalidation, outages and rate limits.
-- Headless Avalonia test on macOS: app starts without configured connector, waits for a missing default folder, ingests a newly created UTF-16 log, follows appended reports and new session files, and resumes monitoring after demo.
-- Apple Silicon publication and macOS code-signature verification. Native window interaction and Documents access prompts still need your confirmation.
+   `http://localhost:17386/callback/`
 
-## If it does not launch
+3. Enable all four scopes:
 
-To capture a startup error, run the executable directly from Terminal (adjust the path to where you extracted the download):
+   - `esi-location.read_location.v1`
+   - `esi-location.read_ship_type.v1`
+   - `esi-location.read_online.v1`
+   - `esi-fleets.read_fleet.v1`
 
-```sh
-"/path/to/SMT Mac Beta.app/Contents/MacOS/SmtMac"
-```
+4. Copy the **public client ID** into the app's **Pilots** tab. Do not enter a client secret; PKCE does not use one.
+5. Choose **Log in with EVE Online**, complete authorization in your browser, and return to the app. Repeat to add another character. Only one app instance can listen on the callback port at a time.
 
-Send the terminal output and your macOS version. The application does not require administrator privileges.
+The callback listener runs only during login, accepts loopback requests with the correct random state, and times out after four minutes. EVE passwords never enter this app. Keychain may request permission; allow the app to access its own token entries. Disconnect removes the local token; to revoke the grant at EVE, use https://developers.eveonline.com/authorized-applications.
 
-## Build from source
+ESI limits visibility. Being a regular fleet member does not necessarily grant the complete fleet roster. Use the fleet boss character for fleet testing. Characters in wormhole systems outside the bundled known-space map remain listed by system ID and cannot be focused on a regional map.
 
-Install Microsoft's .NET 8 SDK, then in `source`:
+## Ansiblex import
 
-```sh
-dotnet run --project src/Smt.Desktop
-dotnet run --project tests/Smt.Tests -- data/universe.json
-bash packaging/build-mac.sh osx-arm64
-```
+Create a UTF-8 text/CSV file with **two exact system names per line**, separated by a comma. No header row. Lines starting with `#` are comments. Each row is a bidirectional link; importing replaces the saved network only after every row validates. See `ansiblex-template.csv`.
 
-For Intel Macs use `osx-x64`. The build script creates the app under `dist/<runtime>/` and ad-hoc signs it when run on a Mac. Developer ID signing/notarization for public distribution is not configured.
+Select **Gates + Ansiblex** after import. Access lists, operational status, fuel, ship restrictions and structure IDs are not checked. Only import links you know you can use. This beta does not discover private alliance networks automatically.
 
-The UI smoke test runs with:
+## Capital planning
 
-```sh
-dotnet run --project tests/Smt.Smoke -- preview.png
-```
+Select **Capital jumps**, choose the hull class and JDC level, then supply start/end and optional waypoints/avoidance. The planner minimizes jump count; it does not optimize fuel, fatigue or total LY among equal-hop paths. Jump freighters and Black Ops may depart highsec, but all jump destinations must be eligible low/null systems. It uses the included upstream coordinate snapshot, independent of map layout coordinates.
 
-Structure: `Smt.Core` contains data, navigation, parsing and file handling without any UI dependency; `Smt.Desktop` contains Avalonia rendering and window orchestration; `tests` contains executable regression and smoke checks. Package versions are pinned in project files. `tools/import_smt_data.py` reproducibly converts upstream XML to JSON.
+A geometrically reachable system is not a guaranteed usable cyno. Confirm cynos, jammers, beacons, docking, access, fuel, ship restrictions and fatigue in game. Pochven and restricted Jovian regions are excluded as destinations. Routes across regions are visible in the route list; the regional canvas shows legs whose endpoints are in view.
 
-## Attribution
+## Refresh and freshness
 
-SMT source: https://github.com/Slazanger/SMT
+- Intel: every 2 seconds; reports expire on-map after 15 minutes.
+- Characters/fleet: polling loop every 6 seconds, subject to ESI cache. Offline positions are explicitly last locations. Failed character updates are marked stale; map markers expire after two minutes without a successful poll.
+- Activity: checked every 5 minutes; ESI data is an hourly aggregate and may be cached longer.
+- Wormholes: every 2 minutes; expired connections are removed. Mass and actual collapse are not independently verified.
+- Storms: every 15 minutes; depends on the public HTML table. A parsing or network failure is displayed and retained data may be stale.
+- Kills: polls about every 6 seconds and catches up in bounded batches. Public reports may arrive late; list retains up to 300 from the last hour, markers last 15 minutes. This is not a full historical killboard.
+- ADM: existing 5-minute cached ESI behavior.
 
-Data snapshot commit: `6b3b4c6a213a349549ef737c89584fc3f048033b`.
+Rate-limit backoff and server cache expiry are respected. Feed status labels distinguish errors from successful checks. The beta relies on external services, which can change independently.
 
-The original SMT MIT notice is preserved in `UPSTREAM-LICENSE.txt`. EVE Online and its universe remain the property of CCP; upstream map layouts may incorporate third-party material, so verify their redistribution terms before wider publication. Avalonia/.NET and their dependencies retain their own licenses. This bundle is a private evaluation prototype, not an official SMT release.
+## Suggested hands-on tests
+
+1. Launch with EVE running and send a system name in your intel channel. Confirm automatic appearance; restart the app and try a new chat session.
+2. Add two characters. Move one through a gate, change ships, and test follow mode. Restart to test Keychain-backed token refresh. Disconnect one and confirm its marker disappears.
+3. Connect the fleet boss. Verify another member's system and ship against EVE. Leave/disband the fleet and verify the roster clears.
+4. Switch all four activity layers. Inspect counts in selected-system details. Open a killmail from the current-region list.
+5. Select a Thera/Turnur connection and a storm. Compare signatures, expiry and locations with the public sources.
+6. Import a known Ansiblex CSV, compare gate-only and bridge-enabled routes, then test an avoided endpoint and a waypoint.
+7. Plan a known capital route for your hull/JDC. Confirm every leg is within range. Compare to in-game range and existing operational routes.
+
+For a bug report include macOS version, selected tab/region, exact steps, status message and a screenshot. Never include refresh/access tokens or authorization callback URLs.
+
+## Known beta boundaries
+
+EVE account authorization and actual fleet permissions require your hands-on test; no developer account or credentials were supplied. This is not complete Windows SMT parity. No in-game waypoint writes, standings overlays, private wormhole mapping, automatic bridge discovery, fuel/fatigue simulation, alert sounds, desktop overlay, auto-updater, Intel-Mac package or Developer ID notarization. Website-only alliance logos, font scaling and ADM threshold filters were not carried into the v0.2 local baseline.
+
+## Build and sources
+
+.NET 8, Avalonia 11.3.8. `bash packaging/build-mac.sh osx-arm64` builds the self-contained app on macOS. Tests live under `tests/`; the workflow builds and validates on an Apple Silicon macOS runner.
+
+Source branch: https://github.com/partiizan/adm-dashboard/tree/mac-local-v0.6/local-client
+
+Bundled universe, 3D coordinates and regional layouts derive from Slazanger/SMT commit `6b3b4c6a213a349549ef737c89584fc3f048033b`. Retain `UPSTREAM-LICENSE.txt`.
+
+Service references:
+- EVE SSO: https://developers.eveonline.com/docs/services/sso/
+- Public ESI: https://esi.evetech.net/
+- Eve-Scout: https://api.eve-scout.com/v2/public/signatures?system_name=Thera
+- Storms: https://evescoutrescue.com/home/stormtrack.php
+- zKillboard R2Z2: https://r2z2.zkillboard.com/ephemeral/sequence.json

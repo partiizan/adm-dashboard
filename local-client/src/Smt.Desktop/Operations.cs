@@ -33,7 +33,7 @@ public partial class MainWindow
         Get<ComboBox>("ActivityLayer").ItemsSource=new[]{"Activity layer off","Ship kills · last hour","Pod kills · last hour","NPC kills · last hour","Ship jumps · last hour"};Get<ComboBox>("ActivityLayer").SelectedIndex=0;
         Get<ComboBox>("ActivityLayer").SelectionChanged+=(_,_)=>ApplyLive();
         foreach(var n in new[]{"WormholeLayer","StormLayer","KillLayer"})Get<CheckBox>(n).IsCheckedChanged+=(_,_)=>ApplyLive();
-        Get<Button>("ImportBridges").Click+=async(_,_)=>await ImportBridges();
+        Get<Button>("ImportBridges").Click+=async(_,_)=>await ImportBridgesAsync();
         Get<Button>("ClearBridges").Click+=(_,_)=>{try{PersistBridges([]);bridges=[];UpdateBridges();}catch(Exception e){SetStatus(e.Message);}};
         try{var path=Path.Combine(SettingsStore.Folder,"ansiblex.csv");if(File.Exists(path))bridges=Navigation.ParseBridges(File.ReadAllText(path),universe);}catch(Exception e){SetStatus("Ansiblex import unavailable: "+e.Message);}UpdateBridges();
         Get<Button>("SsoHelp").Click+=async(_,_)=>
@@ -90,7 +90,7 @@ public partial class MainWindow
     {
         Directory.CreateDirectory(SettingsStore.Folder);var path=Path.Combine(SettingsStore.Folder,"ansiblex.csv");File.WriteAllText(path+".tmp",string.Join('\n',value.Select(b=>b.From+","+b.To)));File.Move(path+".tmp",path,true);
     }
-    private async Task ImportBridges()
+    private async Task ImportBridgesAsync()
     {
         try
         {
