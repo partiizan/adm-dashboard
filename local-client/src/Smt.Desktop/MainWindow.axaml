@@ -8,10 +8,10 @@
      <StackPanel><TextBlock Text="SMT / MAC" FontWeight="Bold" FontSize="17" LetterSpacing="2"/><TextBlock Text="NEW EDEN INTELLIGENCE" Classes="caption" FontSize="9"/></StackPanel>
     </StackPanel>
     <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Your region. In focus." FontSize="19" FontWeight="SemiBold"/><TextBlock Name="DataSummary" Classes="muted" FontSize="11"/></StackPanel>
-    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.3" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
+    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.6" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
    </Grid>
   </Border>
-  <Grid Grid.Row="1" ColumnDefinitions="250,*,310">
+  <Grid Grid.Row="1" ColumnDefinitions="270,*,370">
    <Border BorderBrush="#243143" BorderThickness="0,0,1,0" Padding="18">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
      <StackPanel Spacing="12">
@@ -28,9 +28,18 @@
       <TextBlock Text="ROUTE PLANNER" Classes="caption" Margin="0,10,0,0"/>
       <TextBox Name="FromBox" Watermark="Starting system"/>
       <TextBox Name="ToBox" Watermark="Destination system"/>
+      <TextBox Name="WaypointsBox" Watermark="Waypoints, comma separated"/>
+      <TextBox Name="AvoidBox" Watermark="Avoid systems, comma separated"/>
+      <ComboBox Name="RouteMode" HorizontalAlignment="Stretch"/>
+      <ComboBox Name="ShipPicker" HorizontalAlignment="Stretch"/>
+      <NumericUpDown Name="Calibration" Minimum="0" Maximum="5" Value="5" FormatString="'JDC '0"/>
+      <TextBlock Name="JumpRangeLabel" Classes="muted" FontSize="11"/>
+      <Button Name="ImportBridges" Content="Import Ansiblex CSV…"/>
+      <Button Name="ClearBridges" Content="Clear Ansiblex network"/>
+      <TextBlock Name="BridgeStatus" Text="No Ansiblex network imported" Classes="muted" TextWrapping="Wrap" FontSize="11"/>
       <CheckBox Name="HighSecOnly" Content="High-security systems only" FontSize="11"/>
       <Grid ColumnDefinitions="*,Auto"><Button Name="PlanRoute" Content="Plot route" Classes="primary" HorizontalAlignment="Stretch"/><Button Name="ClearRoute" Grid.Column="1" Content="×" Margin="6,0,0,0" ToolTip.Tip="Clear route"/></Grid>
-      <TextBlock Name="RouteSummary" Text="Shortest stargate route. No jump bridges or wormholes." Classes="muted" FontSize="11" TextWrapping="Wrap"/>
+      <TextBlock Name="RouteSummary" Text="Choose gates, Ansiblex, or capital jumps." Classes="muted" FontSize="11" TextWrapping="Wrap"/>
       <ListBox Name="RouteList" MaxHeight="220" FontSize="11"/>
       <Border BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="0,16,0,0" Margin="0,8,0,0">
        <StackPanel Spacing="8"><TextBlock Text="MAP KEY" Classes="caption"/><TextBlock FontSize="11"><Run Text="●  High sec     " Foreground="#75D3BF"/><Run Text="●  Low sec" Foreground="#EBC077"/></TextBlock><TextBlock FontSize="11"><Run Text="●  Null sec       " Foreground="#C78C9B"/><Run Text="◎  Intel report" Foreground="#FF997E"/></TextBlock><TextBlock Text="Cyan line  ·  Planned route" Foreground="#55DFC5" FontSize="11"/><TextBlock Text="Ring = recent report, not a verified threat. Clear reports are shown in green." Classes="muted" FontSize="10" TextWrapping="Wrap"/></StackPanel>
@@ -50,7 +59,7 @@
     </StackPanel>
    </Grid>
    <Border Grid.Column="2" BorderBrush="#243143" BorderThickness="1,0,0,0" Padding="18">
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+<TabControl><TabItem Header="Intel">    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
      <StackPanel Spacing="7"><TextBlock Text="Intel stream" FontSize="20" FontWeight="SemiBold"/><TextBlock Name="IntelState" Text="Automatically locating EVE chat logs…" Classes="muted" FontSize="11" TextWrapping="Wrap"/>
       <Button Name="ChooseLogs" Content="Change log folder…" HorizontalAlignment="Stretch"/>
       <Button Name="AutoLogs" Content="Use automatic EVE folder" HorizontalAlignment="Stretch"/>
@@ -64,9 +73,40 @@
       <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="0,6" Spacing="5"><TextBlock Text="{Binding Summary}" FontWeight="SemiBold" Foreground="#E4EDF6" FontSize="12" TextWrapping="Wrap"/><TextBlock Text="{Binding Body}" Foreground="#A6B5C8" FontSize="11" TextWrapping="Wrap"/><TextBlock Text="{Binding Meta}" Foreground="#77899F" FontSize="10" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
      <StackPanel Grid.Row="5" Spacing="8" Margin="0,12,0,0"><TextBlock Text="MANUAL INTEL" Classes="caption"/><TextBox Name="ManualIntel" Watermark="e.g. 1DQ1-A 3 neutrals on gate"/><Button Name="AddIntel" Content="Add local report" HorizontalAlignment="Stretch"/></StackPanel>
-    </Grid>
+    </Grid></TabItem>
+<TabItem Header="Pilots"><ScrollViewer><StackPanel Spacing="10" Margin="0,12">
+<TextBlock Text="Characters &amp; fleet" FontSize="19"/>
+<TextBlock Text="Add each character through EVE SSO. Fleet roster access requires the fleet boss character." TextWrapping="Wrap" Classes="muted" FontSize="12"/>
+<TextBox Name="ClientIdBox" Watermark="EVE application client ID"/>
+<Button Name="SsoHelp" Content="SSO setup instructions"/>
+<Button Name="LoginCharacter" Content="Log in with EVE Online" Classes="primary"/>
+<Button Name="CancelLogin" Content="Cancel login" IsEnabled="False"/>
+<TextBlock Name="CharacterStatus" Text="No characters connected" TextWrapping="Wrap" Classes="muted" FontSize="11"/>
+<ListBox Name="CharacterList" MinHeight="100" MaxHeight="220" FontSize="12"/>
+<Button Name="RemoveCharacter" Content="Disconnect selected character"/>
+<CheckBox Name="FollowCharacter" Content="Follow selected character"/>
+<TextBlock Text="FLEET ROSTER" Classes="caption"/>
+<TextBlock Name="FleetStatus" Text="Connect a character to check fleet access." TextWrapping="Wrap" Classes="muted" FontSize="11"/>
+<ListBox Name="FleetList" MinHeight="130" MaxHeight="330" FontSize="11"/>
+</StackPanel></ScrollViewer></TabItem>
+<TabItem Header="Live"><ScrollViewer><StackPanel Spacing="10" Margin="0,12">
+<TextBlock Text="Situational awareness" FontSize="19"/>
+<ComboBox Name="ActivityLayer" HorizontalAlignment="Stretch"/>
+<CheckBox Name="WormholeLayer" Content="Wormhole markers" IsChecked="True"/>
+<CheckBox Name="StormLayer" Content="Storm areas" IsChecked="True"/>
+<CheckBox Name="KillLayer" Content="Recent kill markers" IsChecked="True"/>
+<TextBlock Name="FeedStatus" Text="Connecting to public feeds…" TextWrapping="Wrap" Classes="muted" FontSize="10"/>
+<TextBlock Text="KILL FEED · CURRENT REGION" Classes="caption"/>
+<TextBlock Text="Public zKill reports since connection; may be delayed or incomplete. Double-click to open a killmail." TextWrapping="Wrap" Classes="muted" FontSize="10"/>
+<ListBox Name="KillList" Height="155" FontSize="11"/>
+<TextBlock Text="THERA / TURNUR CONNECTIONS" Classes="caption"/>
+<ListBox Name="WormholeList" Height="160" FontSize="11"/>
+<TextBlock Text="METALIMINAL STORMS" Classes="caption"/>
+<ListBox Name="StormList" Height="120" FontSize="11"/>
+<TextBlock Text="Storm rings: strong ≤1 gate, weak ≤3 gates. Verify wormhole size, expiry, mass and storm effects in game." TextWrapping="Wrap" Classes="muted" FontSize="10"/>
+</StackPanel></ScrollViewer></TabItem></TabControl>
    </Border>
   </Grid>
-  <Border Grid.Row="2" BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="18,8"><Grid ColumnDefinitions="*,Auto"><TextBlock Name="Status" Text="Ready" FontSize="10" Foreground="#9AAABD"/><TextBlock Grid.Column="1" Text="Unofficial SMT prototype · Public ESI ADM / local intel · No login needed" FontSize="10" Foreground="#77899F"/></Grid></Border>
+  <Border Grid.Row="2" BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="18,8"><Grid ColumnDefinitions="*,Auto"><TextBlock Name="Status" Text="Ready" FontSize="10" Foreground="#9AAABD"/><TextBlock Grid.Column="1" Text="Unofficial SMT prototype · Local intel · Optional EVE SSO" FontSize="10" Foreground="#77899F"/></Grid></Border>
  </Grid>
 </Window>

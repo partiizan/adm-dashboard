@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Smt.Core;
 
-public sealed record StarSystem(long Id, string Name, string Region, double Security, double X, double Y, bool Station, string[] Jumps);
+public sealed record StarSystem(long Id, string Name, string Region, double Security, double X, double Y, bool Station, string[] Jumps, double? ActualX = null, double? ActualY = null, double? ActualZ = null);
 public sealed record MapNode(string Name, double X, double Y, bool Outside);
 public sealed record Region(string Name, string Faction, MapNode[] Nodes)
 {

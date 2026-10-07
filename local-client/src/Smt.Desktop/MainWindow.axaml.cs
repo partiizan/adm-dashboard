@@ -62,8 +62,8 @@ public partial class MainWindow : Window
         Get<Button>("FromSelected").Click+=(_,_)=> { if(selected!=null) Get<TextBox>("FromBox").Text=selected; };
         Get<Button>("ToSelected").Click+=(_,_)=> { if(selected!=null) Get<TextBox>("ToBox").Text=selected; };
         Get<Button>("PlanRoute").Click+=(_,_)=>Plan();
-        Get<Button>("ClearRoute").Click+=(_,_)=> { Map.Route=[]; Map.InvalidateVisual(); Get<ListBox>("RouteList").ItemsSource=null; Get<TextBlock>("RouteSummary").Text="Route cleared."; };
-        Get<ListBox>("RouteList").SelectionChanged+=(_,_)=> { if(Get<ListBox>("RouteList").SelectedItem is RouteItem i) SelectSystem(i.System.Name); };
+        Get<Button>("ClearRoute").Click+=(_,_)=> { Map.Route=[]; Map.RouteLegs=[]; Map.InvalidateVisual(); Get<ListBox>("RouteList").ItemsSource=null; Get<TextBlock>("RouteSummary").Text="Route cleared."; };
+        Get<ListBox>("RouteList").SelectionChanged+=(_,_)=> { if(Get<ListBox>("RouteList").SelectedItem is LiveItem i) SelectSystem(i.System); };
         Get<Button>("FitMap").Click+=(_,_)=>Map.Fit();
         Get<Button>("ZoomIn").Click+=(_,_)=>Map.Zoom(1.25);
         Get<Button>("ZoomOut").Click+=(_,_)=>Map.Zoom(.8);
@@ -91,7 +91,8 @@ public partial class MainWindow : Window
         Opened+=async (_,_)=> { await PollLogs(); await UpdateAdmAsync(); };
         timer.Tick+=async (_,_)=> { await PollLogs(); await UpdateAdmAsync(); }; timer.Start();
         ApplyAdm();
-        Closed+=(_,_)=> { timer.Stop(); closing.Cancel(); sovereignty.Dispose(); Save(); };
+        InitializeOperations();
+        Closed+=(_,_)=> { timer.Stop(); closing.Cancel(); sovereignty.Dispose(); StopOperations(); Save(); };
         UpdateWatchState(); SetStatus("Ready · Static gate map with public ESI sovereignty data.");
     }
     public async Task UpdateAdmAsync()
@@ -146,9 +147,10 @@ public partial class MainWindow : Window
         Get<TextBlock>("SystemName").Text=sys.Name;
         Get<TextBlock>("SystemInfo").Text=$"{sys.Region}\nSecurity {sys.Security:0.00} · {sys.Jumps.Length} gates" + (sys.Station?"\nNPC station present":"");
         UpdateAdmDetails();
+        UpdateOperationalDetails();
         Map.InvalidateVisual();
     }
-    private void Plan()
+    private void LegacyPlan()
     {
         var from=Get<TextBox>("FromBox").Text ?? ""; var to=Get<TextBox>("ToBox").Text ?? "";
         if(!universe.Systems.ContainsKey(from.Trim()) || !universe.Systems.ContainsKey(to.Trim())) { SetStatus("Enter two complete system names. Search above can help find them."); return; }

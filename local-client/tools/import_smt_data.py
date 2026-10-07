@@ -5,6 +5,7 @@ out = pathlib.Path(__file__).resolve().parents[1] / 'data/universe.json'
 systems = []
 for s in ET.parse(root / 'EVEData/data/Systems.dat').getroot():
     systems.append(dict(id=int(s.findtext('ID')), name=s.findtext('Name'), region=s.findtext('Region'),
+        actualX=float(s.findtext('ActualX')), actualY=float(s.findtext('ActualY')), actualZ=float(s.findtext('ActualZ')),
         security=float(s.findtext('TrueSec')), x=float(s.findtext('UniverseX')), y=float(s.findtext('UniverseY')),
         station=s.findtext('HasNPCStation') == 'true', jumps=[j.text for j in s.findall('Jumps/string')]))
 known = {s['name'] for s in systems}
