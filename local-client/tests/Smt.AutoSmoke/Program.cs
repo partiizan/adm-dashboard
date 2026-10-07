@@ -85,7 +85,17 @@ try
  if(regionPicker.IsDropDownOpen || window.FindControl<TextBlock>("RegionTitle")!.Text!=nextRegion)
      throw new Exception("Cannot select another region from Period Basis dropdown");
  Console.WriteLine("PASS: Region dropdown opens and accepts a different region via keyboard");
- regionPicker.SelectedItem=regions.First(r=>r.Name=="Delve");
+ regionPicker.IsDropDownOpen=true;
+ var delveIndex=Array.FindIndex(regions,r=>r.Name=="Delve");
+ regionPicker.ScrollIntoView(delveIndex);await Task.Delay(200);
+ var delveRow=regionPicker.ContainerFromIndex(delveIndex) ?? throw new Exception("Delve dropdown row not realized");
+ var popupRoot=TopLevel.GetTopLevel(delveRow)!;
+ var click=delveRow.TranslatePoint(new Point(delveRow.Bounds.Width/2,delveRow.Bounds.Height/2),popupRoot)!.Value;
+ popupRoot.MouseDown(click,Avalonia.Input.MouseButton.Left);
+ popupRoot.MouseUp(click,Avalonia.Input.MouseButton.Left);
+ if(regionPicker.IsDropDownOpen || window.FindControl<TextBlock>("RegionTitle")!.Text!="Delve")
+     throw new Exception("Cannot click Delve in region dropdown");
+ Console.WriteLine("PASS: Mouse selection of Delve in open region dropdown");
  await Task.Delay(6500);
  if(window.FindControl<TextBlock>("RegionTitle")!.Text!="Delve" || SettingsStore.Load().Region!="Delve")
      throw new Exception("Region selection did not survive refresh");
