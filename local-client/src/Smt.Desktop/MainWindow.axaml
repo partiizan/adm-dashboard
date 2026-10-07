@@ -8,7 +8,7 @@
      <StackPanel><TextBlock Text="SMT / MAC" FontWeight="Bold" FontSize="17" LetterSpacing="2"/><TextBlock Text="NEW EDEN INTELLIGENCE" Classes="caption" FontSize="9"/></StackPanel>
     </StackPanel>
     <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Your region. In focus." FontSize="19" FontWeight="SemiBold"/><TextBlock Name="DataSummary" Classes="muted" FontSize="11"/></StackPanel>
-    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.7" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
+    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.8" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
    </Grid>
   </Border>
   <Grid Grid.Row="1" ColumnDefinitions="270,*,370">
@@ -28,8 +28,8 @@
        </StackPanel>
       </Border>
       <TextBlock Text="ROUTE PLANNER" Classes="caption" Margin="0,10,0,0"/>
-      <TextBox Name="FromBox" Watermark="Starting system"/>
-      <TextBox Name="ToBox" Watermark="Destination system"/>
+      <AutoCompleteBox MinimumPrefixLength="1" FilterMode="StartsWithOrdinal" IsTextCompletionEnabled="False" MaxDropDownHeight="240" Name="FromBox" Watermark="Starting system"/>
+      <AutoCompleteBox MinimumPrefixLength="1" FilterMode="StartsWithOrdinal" IsTextCompletionEnabled="False" MaxDropDownHeight="240" Name="ToBox" Watermark="Destination system"/>
       <ComboBox Name="RouteMode" HorizontalAlignment="Stretch"/>
       <ComboBox Name="ShipPicker" HorizontalAlignment="Stretch"/>
       <NumericUpDown Name="Calibration" Minimum="0" Maximum="5" Value="5" FormatString="'JDC '0"/>
@@ -79,21 +79,6 @@
      </ListBox>
      <StackPanel Grid.Row="5" Spacing="8" Margin="0,12,0,0"><TextBlock Text="MANUAL INTEL" Classes="caption"/><TextBox Name="ManualIntel" Watermark="e.g. 1DQ1-A 3 neutrals on gate"/><Button Name="AddIntel" Content="Add local report" HorizontalAlignment="Stretch"/></StackPanel>
     </Grid></TabItem>
-<TabItem Header="Pilots"><ScrollViewer><StackPanel Spacing="10" Margin="0,12">
-<TextBlock Text="Characters &amp; fleet" FontSize="19"/>
-<TextBlock Text="Add each character through EVE SSO. Fleet roster access requires the fleet boss character." TextWrapping="Wrap" Classes="muted" FontSize="12"/>
-<TextBox Name="ClientIdBox" Watermark="EVE application client ID"/>
-<Button Name="SsoHelp" Content="SSO setup instructions"/>
-<Button Name="LoginCharacter" Content="Log in with EVE Online" Classes="primary"/>
-<Button Name="CancelLogin" Content="Cancel login" IsEnabled="False"/>
-<TextBlock Name="CharacterStatus" Text="No characters connected" TextWrapping="Wrap" Classes="muted" FontSize="11"/>
-<ListBox Name="CharacterList" MinHeight="100" MaxHeight="220" FontSize="12"/>
-<Button Name="RemoveCharacter" Content="Disconnect selected character"/>
-<CheckBox Name="FollowCharacter" Content="Follow selected character"/>
-<TextBlock Text="FLEET ROSTER" Classes="caption"/>
-<TextBlock Name="FleetStatus" Text="Connect a character to check fleet access." TextWrapping="Wrap" Classes="muted" FontSize="11"/>
-<ListBox Name="FleetList" MinHeight="130" MaxHeight="330" FontSize="11"/>
-</StackPanel></ScrollViewer></TabItem>
 <TabItem Header="Live"><ScrollViewer><StackPanel Spacing="10" Margin="0,12">
 <TextBlock Text="Situational awareness" FontSize="19"/>
 <ComboBox Name="ActivityLayer" HorizontalAlignment="Stretch"/>
@@ -112,6 +97,6 @@
 </StackPanel></ScrollViewer></TabItem></TabControl>
    </Border>
   </Grid>
-  <Border Grid.Row="2" BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="18,8"><Grid ColumnDefinitions="*,Auto"><TextBlock Name="Status" Text="Ready" FontSize="10" Foreground="#9AAABD"/><TextBlock Grid.Column="1" Text="Unofficial SMT prototype · Local intel · Optional EVE SSO" FontSize="10" Foreground="#77899F"/></Grid></Border>
+  <Border Grid.Row="2" BorderBrush="#243143" BorderThickness="0,1,0,0" Padding="18,8"><Grid ColumnDefinitions="*,Auto"><TextBlock Name="Status" Text="Ready" FontSize="10" Foreground="#9AAABD"/><TextBlock Grid.Column="1" Text="Unofficial SMT prototype · Local intel · Public live feeds" FontSize="10" Foreground="#77899F"/></Grid></Border>
  </Grid>
 </Window>

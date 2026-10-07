@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -59,13 +60,16 @@ public partial class MainWindow : Window
             Get<ListBox>("SearchResults").ItemsSource=items;
             Get<ListBox>("SearchResults").IsVisible=items.Length>0;
         };
-        Get<ListBox>("SearchResults").SelectionChanged+=(_,_)=>{ if(Get<ListBox>("SearchResults").SelectedItem is SearchItem i) SelectSystem(i.System.Name); };
+        WireSystemActivation(Get<ListBox>("SearchResults"),item=>(item as SearchItem)?.System.Name);
+        var systemNames=universe.Systems.Keys.OrderBy(n=>n,StringComparer.OrdinalIgnoreCase).ToArray();
+        Get<AutoCompleteBox>("FromBox").ItemsSource=systemNames;
+        Get<AutoCompleteBox>("ToBox").ItemsSource=systemNames;
         Map.SystemSelected+=name=>SelectSystem(name);
-        Get<Button>("FromSelected").Click+=(_,_)=> { if(selected!=null) Get<TextBox>("FromBox").Text=selected; };
-        Get<Button>("ToSelected").Click+=(_,_)=> { if(selected!=null) Get<TextBox>("ToBox").Text=selected; };
+        Get<Button>("FromSelected").Click+=(_,_)=> { if(selected!=null) Get<AutoCompleteBox>("FromBox").Text=selected; };
+        Get<Button>("ToSelected").Click+=(_,_)=> { if(selected!=null) Get<AutoCompleteBox>("ToBox").Text=selected; };
         Get<Button>("PlanRoute").Click+=(_,_)=>Plan();
         Get<Button>("ClearRoute").Click+=(_,_)=> { Map.Route=[]; Map.RouteLegs=[]; Map.InvalidateVisual(); Get<ListBox>("RouteList").ItemsSource=null; Get<TextBlock>("RouteSummary").Text="Route cleared."; };
-        Get<ListBox>("RouteList").SelectionChanged+=(_,_)=> { if(Get<ListBox>("RouteList").SelectedItem is LiveItem i) SelectSystem(i.System); };
+        WireSystemActivation(Get<ListBox>("RouteList"),item=>(item as LiveItem)?.System);
         Get<Button>("FitMap").Click+=(_,_)=>Map.Fit();
         Get<Button>("ZoomIn").Click+=(_,_)=>Map.Zoom(1.25);
         Get<Button>("ZoomOut").Click+=(_,_)=>Map.Zoom(.8);
@@ -87,7 +91,7 @@ public partial class MainWindow : Window
         };
         Get<Button>("AddIntel").Click+=(_,_)=>AddManual();
         Get<TextBox>("ManualIntel").KeyDown+=(_,e)=> { if(e.Key==Avalonia.Input.Key.Enter) AddManual(); };
-        Get<ListBox>("IntelList").SelectionChanged+=(_,_)=> { if(Get<ListBox>("IntelList").SelectedItem is IntelItem i) SelectSystem(i.Report.Systems[0]); };
+        WireSystemActivation(Get<ListBox>("IntelList"),item=>(item as IntelItem)?.Report.Systems.FirstOrDefault());
         Get<CheckBox>("ShowAdm").IsCheckedChanged+=(_,_)=> { Map.ShowAdm=Get<CheckBox>("ShowAdm").IsChecked==true; Map.InvalidateVisual(); };
         Get<ComboBox>("AdmFilterPicker").ItemsSource=new[]{"ADM highlight: Off","ADM below 5.0","ADM below 4.0"};
         Get<ComboBox>("AdmFilterPicker").SelectedIndex=settings.AdmThreshold==5?1:settings.AdmThreshold==4?2:0;
@@ -145,10 +149,28 @@ public partial class MainWindow : Window
         try { SettingsStore.Save(settings); }
         catch(Exception e) when(e is IOException or UnauthorizedAccessException) { SetStatus("Settings could not be saved: "+e.Message); }
     }
+    // Rebinding live rows is not a request to navigate. Only deliberate user activation is.
+    private void WireSystemActivation(ListBox list,Func<object?,string?> systemName)
+    {
+        void Activate(){if(systemName(list.SelectedItem) is {} name)SelectSystem(name);}
+        list.Tapped+=(_,e)=>
+        {
+            if(e.Source is Control source && (source as ListBoxItem ?? source.FindAncestorOfType<ListBoxItem>()) is {} row)
+            {list.SelectedItem=row.DataContext;Activate();}
+        };
+        list.KeyDown+=(_,e)=>{if(e.Key==Avalonia.Input.Key.Enter){Activate();e.Handled=true;}};
+    }
     private void ChangeRegion()
     {
         if(Get<ComboBox>("RegionPicker").SelectedItem is not Region region) return;
         Map.SetRegion(universe,region);
+        if(selected!=null && !region.Nodes.Any(n=>n.Name==selected))
+        {
+            selected=null;Map.Selected=null;
+            Get<TextBlock>("SystemName").Text="Select a system";
+            Get<TextBlock>("SystemInfo").Text="Click any node on the map.";
+            UpdateAdmDetails();
+        }
         Get<TextBlock>("RegionTitle").Text=region.Name;
         Get<TextBlock>("RegionSubtitle").Text=$"{region.Nodes.Count(n=>!n.Outside)} systems · Stargate network";
         settings=settings with {Region=region.Name}; Save();
@@ -156,12 +178,12 @@ public partial class MainWindow : Window
     public void SelectSystem(string name)
     {
         if(!universe.Systems.TryGetValue(name,out var sys)) return;
-        selected=sys.Name; Map.Selected=sys.Name;
         if(Get<ComboBox>("RegionPicker").SelectedItem is not Region current || !current.Nodes.Any(n=>n.Name==sys.Name))
         {
             var region=universe.Data.Regions.FirstOrDefault(r=>r.Name==sys.Region) ?? universe.Data.Regions.FirstOrDefault(r=>r.Nodes.Any(n=>n.Name==sys.Name));
             if(region!=null) Get<ComboBox>("RegionPicker").SelectedItem=region;
         }
+        selected=sys.Name; Map.Selected=sys.Name;
         Get<TextBlock>("SystemName").Text=sys.Name;
         Get<TextBlock>("SystemInfo").Text=$"{sys.Region}\nSecurity {sys.Security:0.00} · {sys.Jumps.Length} gates" + (sys.Station?"\nNPC station present":"");
         UpdateAdmDetails();
@@ -265,7 +287,7 @@ public partial class MainWindow : Window
             {
                 var r=parser.Parse(msg,"DEMO",now.AddMinutes(-age),true); if(r!=null) AddReport(r with {Speaker="Demo scout"});
             }
-            Get<TextBox>("FromBox").Text="1DQ1-A"; Get<TextBox>("ToBox").Text="N-8YET"; Get<CheckBox>("HighSecOnly").IsChecked=false; Plan();
+            Get<AutoCompleteBox>("FromBox").Text="1DQ1-A"; Get<AutoCompleteBox>("ToBox").Text="N-8YET"; Get<CheckBox>("HighSecOnly").IsChecked=false; Plan();
         }
         else if(tailer!=null) tailer=new LogTailer(tailer.Folder);
         RefreshIntel(); UpdateWatchState(); SetStatus(demo?"Synthetic reports for demonstration only. No live intel is mixed into this view.":"Demo ended. Automatic live monitoring resumes.");

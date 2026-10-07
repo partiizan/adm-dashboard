@@ -18,7 +18,6 @@ public sealed class StarMap : Control
     private readonly Dictionary<string, Point> screen = new(StringComparer.OrdinalIgnoreCase);
     public IReadOnlyList<RouteLeg> RouteLegs { get; set; } = [];
     public IReadOnlyList<Bridge> Bridges { get; set; } = [];
-    public IReadOnlyList<Pilot> Pilots { get; set; } = [];
     public IReadOnlyList<Kill> Kills { get; set; } = [];
     public IReadOnlyList<Wormhole> Wormholes { get; set; } = [];
     public Dictionary<string,int> StormAreas { get; set; } = [];
@@ -120,8 +119,6 @@ public sealed class StarMap : Control
                 if(count>0){var radius=7+Math.Min(23,Math.Log10(count+1)*8);c.DrawEllipse(Brush("#3377B9F3"),new Pen(Brush("#77B9F3"),1),p,radius,radius);Text(c,count.ToString(),new Point(p.X,p.Y-24),Brush("#77B9F3"),10);}
             }
             if(Wormholes.Any(w=>w.System==n.Name && w.Expires>DateTimeOffset.UtcNow))Text(c,"WH",new Point(p.X-17,p.Y-15),Brush("#D9B6FF"),10);
-            var here=Pilots.Where(pilot=>pilot.SystemId==sys.Id).ToArray();
-            if(here.Length>0){c.DrawEllipse(null,new Pen(Brush("#72DFFF"),3),p,8,8);Text(c,$"● {here.Length}",new Point(p.X+19,p.Y-13),Brush("#72DFFF"),10);}
             if(Kills.Any(k=>k.SystemId==sys.Id && k.Time>DateTimeOffset.UtcNow.AddMinutes(-15)))Text(c,"×",new Point(p.X+18,p.Y+3),Brush("#FF776F"),17);
             var color=Brush(sys.Security>=.45?"#75D3BF":sys.Security>0?"#EBC077":"#C78C9B");
             if(Reports.TryGetValue(n.Name,out var report) && DateTimeOffset.UtcNow-report.Time < TimeSpan.FromMinutes(15) && report.Time <= DateTimeOffset.UtcNow.AddMinutes(1))

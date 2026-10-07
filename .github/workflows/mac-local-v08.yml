@@ -1,8 +1,8 @@
-name: Build local Mac v0.7
+name: Build local Mac v0.8
 on:
   push:
-    branches: [mac-local-v0.7]
-    paths: ['local-client/**', '.github/workflows/mac-local-v07.yml']
+    branches: [mac-local-v0.8]
+    paths: ['local-client/**', '.github/workflows/mac-local-v08.yml']
 permissions:
   contents: read
 jobs:
@@ -32,18 +32,18 @@ jobs:
       - name: Package app and source
         working-directory: local-client
         run: |
-          mkdir -p /tmp/SMT-Mac-Beta-0.7/source
-          cp -R 'dist/osx-arm64/SMT Mac Beta.app' /tmp/SMT-Mac-Beta-0.7/
-          cp README.md UPSTREAM-LICENSE.txt ansiblex-template.csv /tmp/SMT-Mac-Beta-0.7/
-          rsync -a --exclude bin --exclude obj --exclude dist ./ /tmp/SMT-Mac-Beta-0.7/source/
-          ditto -c -k --sequesterRsrc --keepParent /tmp/SMT-Mac-Beta-0.7 /tmp/SMT-Mac-Beta-0.7-AppleSilicon.zip
+          mkdir -p /tmp/SMT-Mac-Beta-0.8/source
+          cp -R 'dist/osx-arm64/SMT Mac Beta.app' /tmp/SMT-Mac-Beta-0.8/
+          cp README.md UPSTREAM-LICENSE.txt ansiblex-template.csv /tmp/SMT-Mac-Beta-0.8/
+          rsync -a --exclude bin --exclude obj --exclude dist ./ /tmp/SMT-Mac-Beta-0.8/source/
+          ditto -c -k --sequesterRsrc --keepParent /tmp/SMT-Mac-Beta-0.8 /tmp/SMT-Mac-Beta-0.8-AppleSilicon.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: SMT-Mac-Beta-0.7-AppleSilicon
-          path: /tmp/SMT-Mac-Beta-0.7-AppleSilicon.zip
+          name: SMT-Mac-Beta-0.8-AppleSilicon
+          path: /tmp/SMT-Mac-Beta-0.8-AppleSilicon.zip
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: SMT-v07-previews
+          name: SMT-v08-previews
           path: local-client/screenshots/*.png
           retention-days: 7

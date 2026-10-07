@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text.Json;
 namespace Smt.Core;
 
@@ -12,17 +11,16 @@ public sealed class LiveApi : IDisposable
     public LiveApi(HttpMessageHandler? handler=null)
     {
         http=handler==null?new():new(handler);http.Timeout=TimeSpan.FromSeconds(20);
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("SMT-Mac-Beta/0.7 (+https://github.com/partiizan/adm-dashboard)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("SMT-Mac-Beta/0.8 (+https://github.com/partiizan/adm-dashboard)");
     }
-    public async Task<JsonElement> Json(string url,CancellationToken ct,string? token=null,int cacheSeconds=0)
-    { using var doc=JsonDocument.Parse(await Text(url,ct,token,cacheSeconds)); return doc.RootElement.Clone(); }
-    public async Task<string> Text(string url,CancellationToken ct,string? token=null,int cacheSeconds=0)
+    public async Task<JsonElement> Json(string url,CancellationToken ct,int cacheSeconds=0)
+    { using var doc=JsonDocument.Parse(await Text(url,ct,cacheSeconds)); return doc.RootElement.Clone(); }
+    public async Task<string> Text(string url,CancellationToken ct,int cacheSeconds=0)
     {
-        var host=new Uri(url).Host; var key=url+"|"+(token==null?"public":Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token))));
+        var host=new Uri(url).Host; var key=url;
         if(cache.TryGetValue(key,out var hit) && hit.Until>DateTimeOffset.UtcNow)return hit.Body;
         if(backoff.TryGetValue(host,out var until) && until>DateTimeOffset.UtcNow)throw new HttpRequestException($"{host}: retry after {until:HH:mm:ss} UTC.");
         using var req=new HttpRequestMessage(HttpMethod.Get,url);
-        if(token!=null)req.Headers.Authorization=new AuthenticationHeaderValue("Bearer",token);
         using var response=await http.SendAsync(req,ct);
         if(response.StatusCode==(HttpStatusCode)429 || response.StatusCode==(HttpStatusCode)420 || response.StatusCode==HttpStatusCode.ServiceUnavailable)
             backoff[host]=response.Headers.RetryAfter?.Date ?? DateTimeOffset.UtcNow+(response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(60));
@@ -31,12 +29,6 @@ public sealed class LiveApi : IDisposable
         var seconds=Math.Max(cacheSeconds,(response.Content.Headers.Expires-DateTimeOffset.UtcNow)?.TotalSeconds ?? response.Headers.CacheControl?.MaxAge?.TotalSeconds ?? 0);
         if(seconds>0)cache[key]=(body,DateTimeOffset.UtcNow.AddSeconds(seconds));
         return body;
-    }
-    public async Task<JsonElement> Token(Dictionary<string,string> values,CancellationToken ct)
-    {
-        using var response=await http.PostAsync("https://login.eveonline.com/v2/oauth/token",new FormUrlEncodedContent(values),ct);
-        if(!response.IsSuccessStatusCode) throw new HttpRequestException($"EVE login returned HTTP {(int)response.StatusCode}. Check the client ID, callback and registered scopes; reconnect if access was revoked.");
-        using var doc=JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));return doc.RootElement.Clone();
     }
     public void Dispose()=>http.Dispose();
 }

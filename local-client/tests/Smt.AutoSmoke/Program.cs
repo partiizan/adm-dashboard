@@ -36,16 +36,14 @@ try
  window.ToggleDemo();window.ToggleDemo();
  await PumpUntil(()=>Count()=="3 REPORTS","Monitoring resumes after demo with no duplicated history");
  window.FindControl<ComboBox>("RouteMode")!.SelectedIndex=2;
- window.FindControl<TextBox>("FromBox")!.Text="1DQ1-A";window.FindControl<TextBox>("ToBox")!.Text="N-8YET";
+ window.FindControl<AutoCompleteBox>("FromBox")!.Text="1DQ1-A";window.FindControl<AutoCompleteBox>("ToBox")!.Text="N-8YET";
  window.FindControl<Button>("PlanRoute")!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
  await PumpUntil(()=>window.FindControl<TextBlock>("RouteSummary")!.Text!.Contains("LY total"),"Capital planner button produces a route");
  if(window.FindControl<StarMap>("Map")!.RouteLegs.Any(l=>l.LightYears>7))throw new Exception("Capital range exceeded");
- var vault=new MacKeychain();var testKey="ci-test-"+Guid.NewGuid();
- try{vault.Write(testKey,"test-token-value");if(vault.Read(testKey)!="test-token-value")throw new Exception("Keychain read failed");vault.Write(testKey,"rotated-value");if(vault.Read(testKey)!="rotated-value")throw new Exception("Keychain update failed");vault.Delete(testKey);if(vault.Read(testKey)!=null)throw new Exception("Keychain delete failed");Console.WriteLine("PASS: Native macOS Keychain write/read/rotate/delete");}finally{vault.Delete(testKey);}
  Directory.CreateDirectory("screenshots");
  await Task.Delay(300);
- using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v06-intel.png");
- for(int tab=1;tab<=2;tab++){window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=tab;await Task.Delay(300);using var frame=window.CaptureRenderedFrame();frame?.Save($"screenshots/v06-tab{tab}.png");}
+ using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v08-intel.png");
+ for(int tab=1;tab<=1;tab++){window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=tab;await Task.Delay(300);using var frame=window.CaptureRenderedFrame();frame?.Save($"screenshots/v08-tab{tab}.png");}
  if(!window.FindControl<TextBlock>("IntelDiagnostics")!.Text!.Contains("Last report:"))throw new Exception("Missing intel diagnostics");
  if(!window.FindControl<TextBlock>("IntelState")!.Text!.Contains("~/Documents/EVE/logs/"))throw new Exception("Default path is not displayed relative to current user");
  Console.WriteLine("PASS: Intel diagnostics and current-user default path visible");
@@ -54,7 +52,48 @@ try
  admPicker.SelectedIndex=2;if(window.FindControl<StarMap>("Map")!.AdmThreshold!=4 || SettingsStore.Load().AdmThreshold!=4)throw new Exception("ADM <4 persistence failed");
  Console.WriteLine("PASS: ADM threshold controls update map and persist preference");
  window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=0;
- await Task.Delay(300);using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v07-intel.png");
+ await Task.Delay(300);using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v08-intel.png");
+ var tabs=window.FindControl<TabControl>("OperationsTabs")!;
+ if(tabs.ItemCount!=2 || window.FindControl<Control>("LoginCharacter")!=null ||
+    typeof(Universe).Assembly.GetType("Smt.Core.CharacterService")!=null)
+     throw new Exception("Pilot/SSO removal incomplete");
+ Console.WriteLine("PASS: Only Intel and Live tabs; SSO implementation absent");
+ var regionPicker=window.FindControl<ComboBox>("RegionPicker")!;
+ var regions=regionPicker.ItemsSource!.Cast<Region>().ToArray();
+ foreach(var name in new[]{"Period Basis","Delve","Querious"})
+ {
+     regionPicker.SelectedItem=regions.First(r=>r.Name==name);
+     var intel=window.FindControl<ListBox>("IntelList")!;
+     intel.SelectedIndex=0;
+     await Task.Delay(2200);
+     if(window.FindControl<TextBlock>("RegionTitle")!.Text!=name)
+         throw new Exception("Background selection changed region "+name);
+ }
+ var routeList=window.FindControl<ListBox>("RouteList")!;
+ routeList.ItemsSource=new[]{new LiveItem("Jita","Jita")};routeList.SelectedIndex=0;
+ routeList.RaiseEvent(new Avalonia.Input.KeyEventArgs{RoutedEvent=Avalonia.Input.InputElement.KeyDownEvent,Key=Avalonia.Input.Key.Enter});
+ if(window.FindControl<TextBlock>("RegionTitle")!.Text!="The Forge")throw new Exception("Explicit system activation failed");
+ regionPicker.SelectedItem=regions.First(r=>r.Name=="Period Basis");
+ regionPicker.IsDropDownOpen=true;await Task.Delay(100);
+ regionPicker.SelectedItem=regions.First(r=>r.Name=="Delve");regionPicker.IsDropDownOpen=false;
+ await Task.Delay(6500);
+ if(window.FindControl<TextBlock>("RegionTitle")!.Text!="Delve" || SettingsStore.Load().Region!="Delve")
+     throw new Exception("Region selection did not survive refresh");
+ Console.WriteLine("PASS: Period Basis, Delve, Querious switches survive live/intel refresh; explicit activation still works");
+ foreach(var name in new[]{"FromBox","ToBox"})
+ {
+     var box=window.FindControl<AutoCompleteBox>(name)!;
+     box.Focus();box.Text="p-z";
+     await PumpUntil(()=>box.IsDropDownOpen,name+" opens prefix suggestions");
+     var matches=box.ItemsSource!.Cast<string>().Where(n=>box.TextFilter!("p-z",n)).ToArray();
+     if(!matches.Contains("P-ZMZV") || matches.Any(n=>!n.StartsWith("p-z",StringComparison.OrdinalIgnoreCase)))
+         throw new Exception("Incorrect autocomplete matches");
+     box.SelectedItem="P-ZMZV";await Task.Delay(100);
+     if(box.Text!="P-ZMZV")throw new Exception("Suggestion did not fill route field");
+     box.IsDropDownOpen=false;
+ }
+ Console.WriteLine("PASS: Start and destination suggest P-ZMZV for p-z and accept selection");
+ await Task.Delay(300);using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v08-intel.png");
  Console.WriteLine("Automatic desktop ingestion smoke checks passed on "+System.Runtime.InteropServices.RuntimeInformation.OSDescription);
 }
 catch(Exception error) { failure=error; }
