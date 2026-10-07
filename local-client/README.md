@@ -1,6 +1,15 @@
-# SMT Mac Beta 0.6 — Apple Silicon
+# SMT Mac Beta 0.7 — Apple Silicon
 
 A native macOS beta built from the local v0.3 client, covering the planned v0.4–v0.6 feature groups. Includes the self-contained `.app`; no Terminal launcher or .NET installation is required.
+
+## New in v0.7
+
+- Fixed native EVE chat messages with embedded byte-order marks (U+FEFF) before the opening bracket. UTF-16 log headers and BOM-prefixed messages now parse correctly, including incremental writes.
+- Added **ADM highlight: Off / below 5.0 / below 4.0** under the region picker. Gold rings mark matching systems; thresholds are strict and missing ADM is excluded. Selection persists across launches. Cached data remains marked unverified.
+- Added visible Intel diagnostics: files found/readable, bytes read, latest batch counts, recent versus out-of-window reports, last data/report times, and per-file access errors.
+- The automatic log location resolves from the current user's home directory. The UI displays `~/Documents/EVE/logs/chatlogs`; hover to see the resolved location. No personal username is built into the path. Previously chosen custom folders remain respected; **Use automatic EVE folder** clears an override.
+
+After installing, the app rereads recent history automatically. Your earlier test message will only be imported if it is still within 15 minutes; send a fresh system-name message to verify.
 
 ## Install
 
@@ -88,13 +97,13 @@ For a bug report include macOS version, selected tab/region, exact steps, status
 
 ## Known beta boundaries
 
-EVE account authorization and actual fleet permissions require your hands-on test; no developer account or credentials were supplied. This is not complete Windows SMT parity. No in-game waypoint writes, standings overlays, private wormhole mapping, automatic bridge discovery, fuel/fatigue simulation, alert sounds, desktop overlay, auto-updater, Intel-Mac package or Developer ID notarization. Website-only alliance logos, font scaling and ADM threshold filters were not carried into the v0.2 local baseline.
+EVE account authorization and actual fleet permissions require your hands-on test; no developer account or credentials were supplied. This is not complete Windows SMT parity. No in-game waypoint writes, standings overlays, private wormhole mapping, automatic bridge discovery, fuel/fatigue simulation, alert sounds, desktop overlay, auto-updater, Intel-Mac package or Developer ID notarization. Website-only alliance logos and font scaling were not carried into the v0.2 local baseline.
 
 ## Build and sources
 
 .NET 8, Avalonia 11.3.8. `bash packaging/build-mac.sh osx-arm64` builds the self-contained app on macOS. Tests live under `tests/`; the workflow builds and validates on an Apple Silicon macOS runner.
 
-Source branch: https://github.com/partiizan/adm-dashboard/tree/mac-local-v0.6/local-client
+Source branch: https://github.com/partiizan/adm-dashboard/tree/mac-local-v0.7/local-client
 
 Bundled universe, 3D coordinates and regional layouts derive from Slazanger/SMT commit `6b3b4c6a213a349549ef737c89584fc3f048033b`. Retain `UPSTREAM-LICENSE.txt`.
 

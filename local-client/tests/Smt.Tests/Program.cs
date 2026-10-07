@@ -25,6 +25,30 @@ Check(parser.Parse("Channel Name: Jita","header",now)==null,"Log headers do not 
 Check(parser.Parse(Stamp("New Caldari clear"),"intel",now)?.Systems.Contains("New Caldari")==true,"Multiword system names match");
 Check(parser.Parse("Jita a hostile reported","manual",now,true)!=null,"Manual intel accepted explicitly");
 Check(parser.Parse("[ 2026.99.99 25:99:99 ] Scout > Jita","bad",now)==null,"Malformed log time rejected");
+Check(parser.Parse("\uFEFF"+Stamp("9CG6-H test"),"Fleet",now)?.Systems.Single()=="9CG6-H","Per-message BOM no longer blocks EVE intel parsing");
+Check(parser.Parse(" \t\uFEFF\uFEFF "+Stamp("9CG6-H test"),"Fleet",now)!=null,"Repeated BOMs mixed with leading whitespace accepted");
+Check(parser.Parse("\uFEFFChannel Name: Jita","Fleet",now)==null,"BOM-prefixed headers remain ignored");
+Check(AdmFilter.Matches(3.99,4) && !AdmFilter.Matches(4,4),"ADM below 4 is strict at the boundary");
+Check(AdmFilter.Matches(4.99,5) && !AdmFilter.Matches(5,5),"ADM below 5 is strict at the boundary");
+Check(!AdmFilter.Matches(null,4) && !AdmFilter.Matches(double.NaN,5) && !AdmFilter.Matches(0,5),"Missing and invalid ADM values never highlighted");
+Check(!AdmFilter.Matches(3,null),"ADM filter off produces no highlight");
+var bomDir=Path.Combine(Path.GetTempPath(),"smt-bom-"+Guid.NewGuid());Directory.CreateDirectory(bomDir);
+try
+{
+ var file=Path.Combine(bomDir,"Fleet_test.txt");
+ // Real macOS EVE layout: UTF16 file BOM, LF headers, another BOM before CRLF messages.
+ File.WriteAllText(file,"\r\n\r\n\n\n    Channel Name: Fleet\n\n\uFEFF"+Stamp("9CG6-H test")+"\r\n",Encoding.Unicode);
+ var watcher=new LogTailer(bomDir);var first=watcher.Poll();
+ Check(first.Select(l=>parser.Parse(l.Line,l.Source,now)).Count(r=>r!=null)==1,"UTF16 EVE header and embedded BOM produce one report through tailer");
+ Check(watcher.FilesFound==1 && watcher.EligibleFiles==1 && watcher.FilesRead==1 && watcher.BytesRead>0,"File reader exposes successful scan metrics");
+ Check(watcher.Poll().Count==0 && watcher.BytesRead==0,"Idle scan does not replay BOM-prefixed report");
+ var added=Encoding.Unicode.GetBytes("\uFEFF"+Stamp("9CG6-H clear")+"\r\n");
+ using(var append=new FileStream(file,FileMode.Append)){append.Write(added,0,1);}
+ Check(watcher.Poll().Count==0,"Partial UTF16 BOM waits for complete message");
+ using(var append=new FileStream(file,FileMode.Append)){append.Write(added,1,added.Length-1);}
+ Check(watcher.Poll().Select(l=>parser.Parse(l.Line,l.Source,now)).Single()?.Clear==true,"Split BOM and appended clear message decode correctly");
+}
+finally{Directory.Delete(bomDir,true);}
 var dir=Path.Combine(Path.GetTempPath(),"smt-test-"+Guid.NewGuid()); Directory.CreateDirectory(dir);
 try
 {

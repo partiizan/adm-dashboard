@@ -27,9 +27,9 @@ try
 {
  await PumpUntil(()=>window.FindControl<TextBlock>("IntelState")!.Text!.Contains("Waiting"),"Launch automatically waits for the default folder");
  Directory.CreateDirectory(folder);var file=Path.Combine(folder,"TestIntel.txt");
- File.WriteAllText(file,Line("1DQ1-A 3 hostiles"),Encoding.Unicode);
+ File.WriteAllText(file,"\r\nChannel Name: TestIntel\n\n\uFEFF"+Line("1DQ1-A 3 hostiles"),Encoding.Unicode);
  await PumpUntil(()=>Count()=="1 REPORTS","New default folder and UTF16 log ingested without configuration");
- File.AppendAllText(file,Line("T5ZI-S clear"),Encoding.Unicode);
+ File.AppendAllText(file,"\uFEFF"+Line("T5ZI-S clear"),Encoding.Unicode);
  await PumpUntil(()=>Count()=="2 REPORTS","Appended live report appears automatically");
  File.WriteAllText(Path.Combine(folder,"NewSession.txt"),Line("Jita hostile"));
  await PumpUntil(()=>Count()=="3 REPORTS","New channel/session file appears automatically");
@@ -46,6 +46,15 @@ try
  await Task.Delay(300);
  using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v06-intel.png");
  for(int tab=1;tab<=2;tab++){window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=tab;await Task.Delay(300);using var frame=window.CaptureRenderedFrame();frame?.Save($"screenshots/v06-tab{tab}.png");}
+ if(!window.FindControl<TextBlock>("IntelDiagnostics")!.Text!.Contains("Last report:"))throw new Exception("Missing intel diagnostics");
+ if(!window.FindControl<TextBlock>("IntelState")!.Text!.Contains("~/Documents/EVE/logs/"))throw new Exception("Default path is not displayed relative to current user");
+ Console.WriteLine("PASS: Intel diagnostics and current-user default path visible");
+ var admPicker=window.FindControl<ComboBox>("AdmFilterPicker")!;
+ admPicker.SelectedIndex=1;if(window.FindControl<StarMap>("Map")!.AdmThreshold!=5)throw new Exception("ADM <5 selection failed");
+ admPicker.SelectedIndex=2;if(window.FindControl<StarMap>("Map")!.AdmThreshold!=4 || SettingsStore.Load().AdmThreshold!=4)throw new Exception("ADM <4 persistence failed");
+ Console.WriteLine("PASS: ADM threshold controls update map and persist preference");
+ window.FindControl<TabControl>("OperationsTabs")!.SelectedIndex=0;
+ await Task.Delay(300);using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v07-intel.png");
  Console.WriteLine("Automatic desktop ingestion smoke checks passed on "+System.Runtime.InteropServices.RuntimeInformation.OSDescription);
 }
 catch(Exception error) { failure=error; }

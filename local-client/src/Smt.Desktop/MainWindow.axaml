@@ -8,7 +8,7 @@
      <StackPanel><TextBlock Text="SMT / MAC" FontWeight="Bold" FontSize="17" LetterSpacing="2"/><TextBlock Text="NEW EDEN INTELLIGENCE" Classes="caption" FontSize="9"/></StackPanel>
     </StackPanel>
     <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Your region. In focus." FontSize="19" FontWeight="SemiBold"/><TextBlock Name="DataSummary" Classes="muted" FontSize="11"/></StackPanel>
-    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.6" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
+    <Border Grid.Column="2" Background="#23302A" CornerRadius="5" Padding="12,7" VerticalAlignment="Center"><TextBlock Text="EXPERIMENTAL · 0.7" Foreground="#C8D797" FontSize="10" LetterSpacing="1"/></Border>
    </Grid>
   </Border>
   <Grid Grid.Row="1" ColumnDefinitions="270,*,370">
@@ -17,6 +17,8 @@
      <StackPanel Spacing="12">
       <TextBlock Text="REGION" Classes="caption"/>
       <ComboBox Name="RegionPicker" HorizontalAlignment="Stretch"/>
+      <ComboBox Name="AdmFilterPicker" HorizontalAlignment="Stretch" ToolTip.Tip="Gold rings highlight systems strictly below the selected ADM. Missing values are excluded."/>
+      <TextBlock Name="AdmFilterSummary" Classes="muted" TextWrapping="Wrap" FontSize="11"/>
       <TextBox Name="SearchBox" Watermark="Find a system…"/>
       <ListBox Name="SearchResults" IsVisible="False" MaxHeight="180" FontSize="12"/>
       <Border Classes="card">
@@ -63,6 +65,7 @@
    <Border Grid.Column="2" BorderBrush="#243143" BorderThickness="1,0,0,0" Padding="18">
 <TabControl Name="OperationsTabs"><TabItem Header="Intel">    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
      <StackPanel Spacing="7"><TextBlock Text="Intel stream" FontSize="20" FontWeight="SemiBold"/><TextBlock Name="IntelState" Text="Automatically locating EVE chat logs…" Classes="muted" FontSize="11" TextWrapping="Wrap"/>
+      <TextBlock Name="IntelDiagnostics" Text="Waiting for first scan…" FontSize="11" TextWrapping="Wrap" Foreground="#C5D6E8"/>
       <Button Name="ChooseLogs" Content="Change log folder…" HorizontalAlignment="Stretch"/>
       <Button Name="AutoLogs" Content="Use automatic EVE folder" HorizontalAlignment="Stretch"/>
       <TextBox Name="ChannelFilter" Watermark="Channel filename filter (optional)" FontSize="11"/>

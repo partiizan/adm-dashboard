@@ -22,6 +22,10 @@ public sealed class IntelParser
     public IntelReport? Parse(string line, string source, DateTimeOffset now, bool allowPlainText = false)
     {
         if (line.Length > 8192) return null;
+        // EVE can prepend another UTF-16 BOM to each message, not just the file.
+        int prefix=0;
+        while(prefix<line.Length && (line[prefix]=='\uFEFF' || char.IsWhiteSpace(line[prefix])))prefix++;
+        line=line[prefix..];
         var match = Chat.Match(line);
         if (!match.Success && !allowPlainText) return null;
         var message = match.Success ? match.Groups["message"].Value : line;

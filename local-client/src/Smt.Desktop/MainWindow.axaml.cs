@@ -33,6 +33,8 @@ public partial class MainWindow : Window
     private Settings settings;
     private LogTailer? tailer;
     private bool polling, paused, demo;
+    private DateTimeOffset? lastLogRead, lastIntelMatch;
+    private string lastReadSummary="No messages read yet.";
     private string? selected;
     private T Get<T>(string name) where T : Control => this.FindControl<T>(name)!;
 
@@ -87,6 +89,15 @@ public partial class MainWindow : Window
         Get<TextBox>("ManualIntel").KeyDown+=(_,e)=> { if(e.Key==Avalonia.Input.Key.Enter) AddManual(); };
         Get<ListBox>("IntelList").SelectionChanged+=(_,_)=> { if(Get<ListBox>("IntelList").SelectedItem is IntelItem i) SelectSystem(i.Report.Systems[0]); };
         Get<CheckBox>("ShowAdm").IsCheckedChanged+=(_,_)=> { Map.ShowAdm=Get<CheckBox>("ShowAdm").IsChecked==true; Map.InvalidateVisual(); };
+        Get<ComboBox>("AdmFilterPicker").ItemsSource=new[]{"ADM highlight: Off","ADM below 5.0","ADM below 4.0"};
+        Get<ComboBox>("AdmFilterPicker").SelectedIndex=settings.AdmThreshold==5?1:settings.AdmThreshold==4?2:0;
+        Map.AdmThreshold=settings.AdmThreshold;
+        Get<ComboBox>("AdmFilterPicker").SelectionChanged+=(_,_)=>
+        {
+            Map.AdmThreshold=Get<ComboBox>("AdmFilterPicker").SelectedIndex switch {1=>5,2=>4,_=>(double?)null};
+            settings=settings with{AdmThreshold=Map.AdmThreshold};Save();UpdateAdmFilter();Map.InvalidateVisual();
+        };
+        Get<ComboBox>("RegionPicker").SelectionChanged+=(_,_)=>UpdateAdmFilter();
         Get<Button>("RefreshAdm").Click+=async (_,_)=>await UpdateAdmAsync();
         Opened+=async (_,_)=> { await PollLogs(); await UpdateAdmAsync(); };
         timer.Tick+=async (_,_)=> { await PollLogs(); await UpdateAdmAsync(); }; timer.Start();
@@ -109,7 +120,14 @@ public partial class MainWindow : Window
         string checkedText=sovereignty.CheckedAt is {} t ? $"Checked {t:MMM d HH:mm} UTC" : "No ADM data yet";
         Get<TextBlock>("AdmStatus").Text=(sovereignty.Error!=null?"ESI unavailable · ":sovereignty.FromDisk?"Cached · ":"Public ESI · ")+checkedText+(sovereignty.IsStale && sovereignty.CheckedAt!=null?" · * cached/old values":"")+" · 5m refresh";
         ToolTip.SetTip(Get<TextBlock>("AdmStatus"),sovereignty.Error ?? "Activity Defense Multiplier from CCP ESI. N/A = no applicable sovereignty ADM; — = not reported. Refresh respects the server cache.");
-        UpdateAdmDetails();
+        UpdateAdmDetails();UpdateAdmFilter();
+    }
+    private void UpdateAdmFilter()
+    {
+        if(Map.AdmThreshold is not {} threshold){Get<TextBlock>("AdmFilterSummary").Text="ADM highlighting off";return;}
+        var region=Get<ComboBox>("RegionPicker").SelectedItem as Region;
+        var count=region?.Nodes.Count(n=>!n.Outside && universe.Systems.TryGetValue(n.Name,out var s) && sovereignty.Systems.TryGetValue(s.Id,out var sov) && AdmFilter.Matches(sov.Adm,threshold))??0;
+        Get<TextBlock>("AdmFilterSummary").Text=$"Gold rings · {count} systems below {threshold:0.0} in region"+(sovereignty.IsStale?" · cached/unverified data":"");
     }
     private void UpdateAdmDetails()
     {
@@ -165,8 +183,12 @@ public partial class MainWindow : Window
     }
     private void UpdateWatchState()
     {
-        string mode=string.IsNullOrWhiteSpace(settings.LogFolder)?"Automatic":"Custom folder";
-        Get<TextBlock>("IntelState").Text=demo?"Demo mode · live monitoring suspended":paused?"Paused · reports still expire":$"{mode} · scanning every 2 seconds\n{tailer?.Folder}";
+        string mode=string.IsNullOrWhiteSpace(settings.LogFolder)?"Automatic · current user":"Custom folder";
+        var path=tailer?.Folder??LogFolderLocator.Resolve(settings.LogFolder);
+        var home=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd(Path.DirectorySeparatorChar);
+        var displayPath=path.StartsWith(home+Path.DirectorySeparatorChar,StringComparison.Ordinal)?"~"+path[home.Length..]:path;
+        ToolTip.SetTip(Get<TextBlock>("IntelState"),path);
+        Get<TextBlock>("IntelState").Text=demo?"Demo mode · live monitoring suspended":paused?"Paused · reports still expire":$"{mode} · scanning every 2 seconds\n{displayPath}";
     }
     private async Task PollLogs()
     {
@@ -176,21 +198,35 @@ public partial class MainWindow : Window
         var current=tailer; var filter=settings.ChannelFilter; polling=true;
         try
         {
-            var parsed=await Task.Run(()=>current.Poll()
-                .Where(x=>string.IsNullOrWhiteSpace(filter)||x.Source.Contains(filter,StringComparison.OrdinalIgnoreCase))
-                .Select(x=>parser.Parse(x.Line,x.Source,DateTimeOffset.UtcNow))
-                .Where(r=>r!=null && r.Time>=DateTimeOffset.UtcNow.AddMinutes(-15) && r.Time<=DateTimeOffset.UtcNow.AddMinutes(1)).Cast<IntelReport>().ToArray());
+            var batch=await Task.Run(()=>
+            {
+                var lines=current.Poll();
+                var filtered=lines.Where(x=>string.IsNullOrWhiteSpace(filter)||x.Source.Contains(filter,StringComparison.OrdinalIgnoreCase)).ToArray();
+                var matches=filtered.Select(x=>parser.Parse(x.Line,x.Source,DateTimeOffset.UtcNow)).Where(r=>r!=null).Cast<IntelReport>().ToArray();
+                var now=DateTimeOffset.UtcNow;
+                var recent=matches.Where(r=>r.Time>=now.AddMinutes(-15) && r.Time<=now.AddMinutes(1)).ToArray();
+                return (LineCount:lines.Count,Filtered:filtered.Length,Matches:matches.Length,Recent:recent);
+            });
             if(current!=tailer || demo || paused || closing.IsCancellationRequested) return;
-            foreach(var r in parsed) AddReport(r);
+            foreach(var r in batch.Recent) AddReport(r);
+            if(current.BytesRead>0)lastLogRead=DateTimeOffset.UtcNow;
+            if(batch.Recent.Length>0)lastIntelMatch=DateTimeOffset.UtcNow;
+            if(batch.LineCount>0)lastReadSummary=$"Last batch: {batch.LineCount} lines · {batch.Filtered} pass channel filter · {batch.Recent.Length} recent reports · {batch.Matches-batch.Recent.Length} outside time window.";
             RefreshIntel(); UpdateWatchState();
-            SetStatus($"Monitoring · checked {DateTime.Now:HH:mm:ss} · {parsed.Length} matching lines this check"+(current.ReadErrors.Count>0?$" · {current.ReadErrors.Count} unreadable file(s), retrying":""));
+            var overview=current.FilesFound==0?"No .txt chat logs found in this folder.":current.EligibleFiles==0?$"{current.FilesFound} files found; none modified in the last 2 days.":$"{current.FilesRead}/{current.EligibleFiles} recent log files readable · {current.BytesRead:N0} new bytes this scan.";
+            var errors=current.ReadErrors.Count>0?$"\n{current.ReadErrors.Count} file(s) could not be read; retrying. Check file access.":"";
+            Get<TextBlock>("IntelDiagnostics").Text=overview+errors+"\n"+lastReadSummary+
+                "\nLast data read: "+(lastLogRead is {} read?$"{read:HH:mm:ss} UTC":"never")+" · Last report: "+(lastIntelMatch is {} match?$"{match:HH:mm:ss} UTC":"none");
+            ToolTip.SetTip(Get<TextBlock>("IntelDiagnostics"),current.ReadErrors.Count>0?string.Join("\n",current.ReadErrors):"Complete lines are parsed; only reports from the last 15 minutes are imported. Counts include headers and messages without system names.");
+            SetStatus($"Intel checked {DateTime.Now:HH:mm:ss} · {batch.Recent.Length} recent matching reports this scan"+errors.Replace("\n"," "));
+
         }
         catch(DirectoryNotFoundException)
-        { Get<TextBlock>("IntelState").Text="Waiting for EVE chat logs · checking every 2 seconds\n"+current.Folder; SetStatus("Open EVE with chat logging enabled. Use Change folder only if your logs are stored elsewhere."); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Folder not found. Waiting for EVE to create it."; Get<TextBlock>("IntelState").Text="Waiting for EVE chat logs · checking every 2 seconds\n"+current.Folder; SetStatus("Open EVE with chat logging enabled. Use Change folder only if your logs are stored elsewhere."); }
         catch(UnauthorizedAccessException)
-        { Get<TextBlock>("IntelState").Text="Documents access needed · retrying\n"+current.Folder; SetStatus("Allow SMT Mac Beta to read Documents when macOS asks, or grant Documents access in System Settings → Privacy & Security → Files and Folders."); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Cannot read the folder: Documents permission is needed."; Get<TextBlock>("IntelState").Text="Documents access needed · retrying\n"+current.Folder; SetStatus("Allow SMT Mac Beta to read Documents when macOS asks, or grant Documents access in System Settings → Privacy & Security → Files and Folders."); }
         catch(Exception e) when(e is IOException or System.Text.RegularExpressions.RegexMatchTimeoutException)
-        { Get<TextBlock>("IntelState").Text="Log access error · retrying\n"+current.Folder; SetStatus(e.Message); }
+        { Get<TextBlock>("IntelDiagnostics").Text="Read failed: "+e.Message; Get<TextBlock>("IntelState").Text="Log access error · retrying\n"+current.Folder; SetStatus(e.Message); }
         finally { polling=false; }
     }
     private void AddReport(IntelReport report)

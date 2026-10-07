@@ -14,13 +14,19 @@ public sealed class LogTailer
     }
     private readonly Dictionary<string, Cursor> cursors = new();
     public string Folder { get; }
+    public int FilesFound { get; private set; }
+    public int EligibleFiles { get; private set; }
+    public int FilesRead { get; private set; }
+    public long BytesRead { get; private set; }
     public List<string> ReadErrors { get; } = [];
     public LogTailer(string folder) => Folder = folder;
     public IReadOnlyList<(string Source, string Line)> Poll()
     {
-        ReadErrors.Clear();
+        ReadErrors.Clear(); FilesFound=EligibleFiles=FilesRead=0; BytesRead=0;
         var result = new List<(string, string)>();
-        var paths = Directory.EnumerateFiles(Folder, "*.txt").Where(p => File.GetLastWriteTimeUtc(p) > DateTime.UtcNow.AddDays(-2)).ToHashSet();
+        var allPaths=Directory.EnumerateFiles(Folder, "*.txt").ToArray();FilesFound=allPaths.Length;
+        var paths = allPaths.Where(p => File.GetLastWriteTimeUtc(p) > DateTime.UtcNow.AddDays(-2)).ToHashSet();
+        EligibleFiles=paths.Count;
         foreach (var stale in cursors.Keys.Where(p => !paths.Contains(p)).ToArray()) cursors.Remove(stale);
         foreach (var path in paths)
         {
@@ -56,7 +62,7 @@ public sealed class LogTailer
             file.Position = cursor.Position;
             int remaining = (int)Math.Min(file.Length - cursor.Position, 1024 * 1024);
             var buffer = new byte[remaining]; int read = file.Read(buffer, 0, remaining);
-            cursor.Position += read;
+            cursor.Position += read; FilesRead++; BytesRead+=read;
             cursor.Checkpoint = new byte[(int)Math.Min(64,cursor.Position)];
             file.Position = cursor.Position - cursor.Checkpoint.Length;
             file.ReadExactly(cursor.Checkpoint);

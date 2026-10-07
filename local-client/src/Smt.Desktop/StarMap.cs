@@ -24,6 +24,7 @@ public sealed class StarMap : Control
     public Dictionary<string,int> StormAreas { get; set; } = [];
     public IReadOnlyDictionary<long,Activity> Activity { get; set; } = new Dictionary<long,Activity>();
     public int ActivityMode { get; set; }
+    public double? AdmThreshold { get; set; }
     public bool ShowAdm { get; set; } = true;
     public bool AdmStale { get; set; }
     public IReadOnlyDictionary<long,SystemSovereignty> Sovereignty { get; set; } = new Dictionary<long,SystemSovereignty>();
@@ -110,6 +111,8 @@ public sealed class StarMap : Control
         {
             var p=screen[n.Name]; if(p.X < -70 || p.Y < -30 || p.X>Bounds.Width+70 || p.Y>Bounds.Height+30) continue;
             var sys=universe.Systems[n.Name];
+            if(Sovereignty.TryGetValue(sys.Id,out var filteredSov) && AdmFilter.Matches(filteredSov.Adm,AdmThreshold))
+                c.DrawEllipse(null,new Pen(Brush("#FFC65C"),3),p,22,22);
             if(StormAreas.TryGetValue(n.Name,out var strength))c.DrawEllipse(Brush(strength==2?"#446E55AE":"#226E55AE"),new Pen(Brush("#987BD0"),.5),p,strength==2?25:20,strength==2?25:20);
             if(ActivityMode>0 && Activity.TryGetValue(sys.Id,out var a))
             {
