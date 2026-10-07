@@ -150,17 +150,6 @@ public partial class MainWindow : Window
         UpdateOperationalDetails();
         Map.InvalidateVisual();
     }
-    private void LegacyPlan()
-    {
-        var from=Get<TextBox>("FromBox").Text ?? ""; var to=Get<TextBox>("ToBox").Text ?? "";
-        if(!universe.Systems.ContainsKey(from.Trim()) || !universe.Systems.ContainsKey(to.Trim())) { SetStatus("Enter two complete system names. Search above can help find them."); return; }
-        var high=Get<CheckBox>("HighSecOnly").IsChecked==true;
-        var route=universe.Route(from,to,high); Map.Route=route;
-        Get<ListBox>("RouteList").ItemsSource=route.Select((s,i)=>new RouteItem(i,s)).ToArray();
-        Get<TextBlock>("RouteSummary").Text=route.Count==0?"No route found with these restrictions.":$"{route.Count-1} jumps · {route.Count(s=>s.Security<.45)} low/null-sec systems\nSnapshot gates only; verify in game.";
-        settings=settings with {HighSecOnly=high}; Save(); Map.InvalidateVisual();
-        if(route.Count>0) SelectSystem(route[0].Name);
-    }
     private async Task ChooseLogFolder()
     {
         try

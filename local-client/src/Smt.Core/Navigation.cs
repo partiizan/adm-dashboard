@@ -9,7 +9,8 @@ public static class Navigation
     public static readonly string[] Ships = ["Carrier / Dread / FAX", "Supercarrier / Titan", "Jump freighter", "Rorqual", "Black Ops", "Command carrier"];
     public static double Range(int ship, int calibration) => (ship switch { 0 => 3.5, 1 => 3, 2 => 5, 3 => 5, 4 => 4, 5 => 3.75, _ => throw new ArgumentOutOfRangeException(nameof(ship)) }) * (1 + .2 * Math.Clamp(calibration,0,5));
     public static double Distance(StarSystem a, StarSystem b) => a.ActualX is {} x && a.ActualY is {} y && a.ActualZ is {} z && b.ActualX is {} bx && b.ActualY is {} by && b.ActualZ is {} bz ? Math.Sqrt(Math.Pow(x-bx,2)+Math.Pow(y-by,2)+Math.Pow(z-bz,2)) : double.PositiveInfinity;
-    public static bool JumpDestination(StarSystem s) => s.Security < .45 && s.Region is not "Pochven" and not "A821-A" and not "J7HZ-F" and not "UUA-F4" && s.Id < 31000000;
+    public static bool JumpDestination(StarSystem s) => s.Security < .45 && JumpSpace(s);
+    public static bool JumpSpace(StarSystem s) => s.Region is not "Pochven" and not "A821-A" and not "J7HZ-F" and not "UUA-F4" && s.Id < 31000000;
     public static Bridge[] ParseBridges(string text, Universe u)
     {
         var result=new List<Bridge>(); var row=0;
@@ -31,7 +32,7 @@ public static class Navigation
         if(avoid.Any(s=>!u.Systems.ContainsKey(s))) throw new ArgumentException("An avoided system name is not recognized.");
         if(stops.Any(avoid.Contains)) throw new ArgumentException("A required stop is also in the avoidance list.");
         if(capitalRange is {} range && (!double.IsFinite(range) || range<=0 || range>10)) throw new ArgumentException("Jump range must be greater than zero and at most 10 LY.");
-        if(capitalRange!=null && stops.Skip(allowHighsecStart?1:0).Any(s=>!JumpDestination(u.Systems[s]))) throw new ArgumentException("Capital stops must be accessible low/null-sec systems outside Pochven.");
+        if(capitalRange!=null && (!JumpSpace(u.Systems[stops[0]]) || stops.Skip(allowHighsecStart?1:0).Any(s=>!JumpDestination(u.Systems[s])))) throw new ArgumentException("Capital stops must be accessible low/null-sec systems outside Pochven.");
         var systems=new List<StarSystem>(); var legs=new List<RouteLeg>();
         for(int i=1;i<stops.Length;i++)
         {

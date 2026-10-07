@@ -83,7 +83,7 @@ public partial class MainWindow
             Get<TextBlock>("RouteSummary").Text=route.Systems.Count==0?"No route found with these restrictions.":$"{route.Legs.Count} hops · {route.Legs.Count(l=>l.Kind=="Ansiblex")} Ansiblex"+(mode==2?$"\n{route.Legs.Sum(l=>l.LightYears):0.00} LY total. Cynos, fuel, fatigue and access must be checked in game.":"\nBridge access, fuel and online status are not verified.");
             Map.InvalidateVisual();if(route.Systems.Count>0)SelectSystem(route.Systems[0].Name);
         }
-        catch(Exception e){SetStatus("Route: "+e.Message);}
+        catch(Exception e){Map.Route=[];Map.RouteLegs=[];Map.InvalidateVisual();Get<ListBox>("RouteList").ItemsSource=null;Get<TextBlock>("RouteSummary").Text=e.Message;SetStatus("Route: "+e.Message);}
         finally{routeBusy=false;Get<Button>("PlanRoute").IsEnabled=true;}
     }
     private void PersistBridges(Bridge[] value)
