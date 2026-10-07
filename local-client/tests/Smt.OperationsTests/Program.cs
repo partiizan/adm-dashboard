@@ -54,5 +54,11 @@ var rateHandler=new Stub(req=>new(HttpStatusCode.TooManyRequests){Content=new St
 for(int i=0;i<2;i++)try{await rateApi.Json("https://esi.evetech.net/test",default);}catch(HttpRequestException){}
 Check(rateHandler.Calls==1,"Rate limit blocks repeated requests during backoff");
 Console.WriteLine($"{passed} operations checks passed.");
+if(args.Contains("--live"))
+{
+ using var publicApi=new LiveApi();var live=new Situational(publicApi,u);await live.Refresh(default);
+ foreach(var status in live.Status.Values)Console.WriteLine("LIVE: "+status);
+ Console.WriteLine($"LIVE COUNTS: activity={live.Activity.Count}; wormholes={live.Wormholes.Count}; storms={live.Storms.Count}; kills={live.Kills.Count}");
+}
 sealed class Stub(Func<HttpRequestMessage,HttpResponseMessage> respond):HttpMessageHandler{public int Calls;protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage req,CancellationToken ct){Calls++;return Task.FromResult(respond(req));}}
 sealed class MemoryVault:ITokenVault{readonly Dictionary<string,string> data=[];public string? Read(string key)=>data.GetValueOrDefault(key);public void Write(string key,string value)=>data[key]=value;public void Delete(string key)=>data.Remove(key);}

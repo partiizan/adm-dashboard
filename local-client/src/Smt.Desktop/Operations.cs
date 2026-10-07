@@ -19,7 +19,7 @@ public partial class MainWindow
     private readonly Dictionary<long,string> names=[];
     private readonly Dictionary<long,string> ships=[];
     private Bridge[] bridges=[];
-    private bool liveBusy,characterBusy,routeBusy;
+    private bool liveBusy,characterBusy,routeBusy,refreshingPilotRows;
     private CancellationTokenSource? loginCancel;
     private long? activeCharacter;
     private static void Browse(string url)=>Process.Start(new ProcessStartInfo(url){UseShellExecute=true});
@@ -49,7 +49,7 @@ public partial class MainWindow
             var c=characters.Characters.FirstOrDefault(c=>c.Id==item.Pilot.Id);if(c==null)return;
             try{characters.Remove(c);pilots.Remove(c.Id);fleets.Remove(c.Id);fleetStates.Remove(c.Id);activeCharacter=null;RefreshPilots();ApplyLive();}catch(Exception e){Get<TextBlock>("CharacterStatus").Text=e.Message;}
         };
-        Get<ListBox>("CharacterList").SelectionChanged+=(_,_)=>{if(Get<ListBox>("CharacterList").SelectedItem is PilotItem i){activeCharacter=i.Pilot.Id;FocusPilot(i.Pilot);RefreshFleet();}};
+        Get<ListBox>("CharacterList").SelectionChanged+=(_,_)=>{if(Get<ListBox>("CharacterList").SelectedItem is PilotItem i){activeCharacter=i.Pilot.Id;if(!refreshingPilotRows)FocusPilot(i.Pilot);RefreshFleet();}};
         Get<ListBox>("FleetList").SelectionChanged+=(_,_)=>{if(Get<ListBox>("FleetList").SelectedItem is PilotItem i)FocusPilot(i.Pilot);};
         foreach(var name in new[]{"KillList","WormholeList","StormList"})Get<ListBox>(name).SelectionChanged+=(_,_)=>{if(Get<ListBox>(name).SelectedItem is LiveItem i)SelectSystem(i.System);};
         Get<ListBox>("KillList").DoubleTapped+=(_,_)=>{if(Get<ListBox>("KillList").SelectedItem is LiveItem {Id:>0} i)Browse($"https://zkillboard.com/kill/{i.Id}/");};
@@ -127,7 +127,7 @@ public partial class MainWindow
                     var result=await characters.Poll(c,closing.Token);if(!characters.Characters.Contains(c))continue;
                     pilots[c.Id]=result.Pilot;fleets[c.Id]=result.Fleet;fleetStates[c.Id]=result.FleetStatus;
                     // Resolve public labels once; failures retain numeric IDs and do not hide positions.
-                    foreach(var pilot in result.Fleet.Prepend(result.Pilot).Take(20))
+                    foreach(var pilot in result.Fleet.Prepend(result.Pilot).Where(p=>!ships.ContainsKey(p.ShipType) || p.Fleet && !names.ContainsKey(p.Id)).Take(20))
                     {
                         if(!ships.ContainsKey(pilot.ShipType))try{ships[pilot.ShipType]=(await liveApi.Json($"https://esi.evetech.net/latest/universe/types/{pilot.ShipType}/",closing.Token,cacheSeconds:86400)).Str("name");}catch(HttpRequestException){}
                         if(pilot.Fleet && !names.ContainsKey(pilot.Id))try{names[pilot.Id]=(await liveApi.Json($"https://esi.evetech.net/latest/characters/{pilot.Id}/",closing.Token,cacheSeconds:86400)).Str("name");}catch(HttpRequestException){}
@@ -145,7 +145,7 @@ public partial class MainWindow
     private void RefreshPilots()
     {
         var rows=characters.Characters.Select(c=>PilotRow(pilots.GetValueOrDefault(c.Id)??new(c.Id,c.Name,0,0,false,DateTimeOffset.MinValue,"Awaiting ESI"))).ToArray();
-        var keep=activeCharacter;Get<ListBox>("CharacterList").ItemsSource=rows;if(keep!=null)Get<ListBox>("CharacterList").SelectedItem=rows.FirstOrDefault(r=>r.Pilot.Id==keep);RefreshFleet();
+        refreshingPilotRows=true;var keep=activeCharacter;Get<ListBox>("CharacterList").ItemsSource=rows;if(keep!=null)Get<ListBox>("CharacterList").SelectedItem=rows.FirstOrDefault(r=>r.Pilot.Id==keep);refreshingPilotRows=false;RefreshFleet();
     }
     private void RefreshFleet()
     {

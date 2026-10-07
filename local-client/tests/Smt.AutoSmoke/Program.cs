@@ -9,7 +9,7 @@ using System.Text;
 // Isolated CI runner only: exercise the actual default location without saved configuration.
 var folder=LogFolderLocator.Resolve();
 if(Directory.Exists(folder)||File.Exists(SettingsStore.PathName)) throw new Exception("Auto smoke requires a clean runner profile");
-AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions{UseHeadlessDrawing=false}).SetupWithoutStarting();
 var window=new MainWindow();window.Show();
 async Task PumpUntil(Func<bool> condition,string label)
 {
@@ -35,6 +35,16 @@ try
  await PumpUntil(()=>Count()=="3 REPORTS","New channel/session file appears automatically");
  window.ToggleDemo();window.ToggleDemo();
  await PumpUntil(()=>Count()=="3 REPORTS","Monitoring resumes after demo with no duplicated history");
+ window.FindControl<ComboBox>("RouteMode")!.SelectedIndex=2;
+ window.FindControl<TextBox>("FromBox")!.Text="1DQ1-A";window.FindControl<TextBox>("ToBox")!.Text="N-8YET";
+ window.FindControl<Button>("PlanRoute")!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+ await PumpUntil(()=>window.FindControl<TextBlock>("RouteSummary")!.Text!.Contains("LY total"),"Capital planner button produces a route");
+ if(window.FindControl<StarMap>("Map")!.RouteLegs.Any(l=>l.LightYears>7))throw new Exception("Capital range exceeded");
+ var vault=new MacKeychain();var testKey="ci-test-"+Guid.NewGuid();
+ try{vault.Write(testKey,"test-token-value");if(vault.Read(testKey)!="test-token-value")throw new Exception("Keychain read failed");vault.Write(testKey,"rotated-value");if(vault.Read(testKey)!="rotated-value")throw new Exception("Keychain update failed");vault.Delete(testKey);if(vault.Read(testKey)!=null)throw new Exception("Keychain delete failed");Console.WriteLine("PASS: Native macOS Keychain write/read/rotate/delete");}finally{vault.Delete(testKey);}
+ Directory.CreateDirectory("screenshots");
+ await Task.Delay(300);
+ using(var frame=window.CaptureRenderedFrame())frame?.Save("screenshots/v06-intel.png");
  Console.WriteLine("Automatic desktop ingestion smoke checks passed on "+System.Runtime.InteropServices.RuntimeInformation.OSDescription);
 }
 catch(Exception error) { failure=error; }

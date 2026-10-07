@@ -15,7 +15,7 @@ public sealed class LiveApi : IDisposable
         http.DefaultRequestHeaders.UserAgent.ParseAdd("SMT-Mac-Beta/0.6 (+https://github.com/partiizan/adm-dashboard)");
     }
     public async Task<JsonElement> Json(string url,CancellationToken ct,string? token=null,int cacheSeconds=0)
-        => JsonDocument.Parse(await Text(url,ct,token,cacheSeconds)).RootElement.Clone();
+    { using var doc=JsonDocument.Parse(await Text(url,ct,token,cacheSeconds)); return doc.RootElement.Clone(); }
     public async Task<string> Text(string url,CancellationToken ct,string? token=null,int cacheSeconds=0)
     {
         var host=new Uri(url).Host; var key=url+"|"+(token==null?"public":Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token))));

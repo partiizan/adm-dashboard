@@ -18,7 +18,7 @@ jobs:
         run: dotnet run --project tests/Smt.Tests -c Release -- data/universe.json
       - name: Operations regression tests
         working-directory: local-client
-        run: dotnet run --project tests/Smt.OperationsTests -c Release -- data/universe.json
+        run: dotnet run --project tests/Smt.OperationsTests -c Release -- data/universe.json --live
       - name: Automatic log ingestion desktop test
         working-directory: local-client
         run: dotnet run --project tests/Smt.AutoSmoke -c Release
