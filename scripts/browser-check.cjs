@@ -1,0 +1,28 @@
+const {chromium,webkit}=require('playwright');
+const {spawn}=require('node:child_process');const assert=require('node:assert/strict');
+(async()=>{const server=spawn('python3',['-m','http.server','8765','--directory','dist'],{stdio:'ignore'});try{
+ await new Promise(r=>setTimeout(r,1500));
+ for(const [name,engine] of Object.entries({chromium,webkit})){
+ const browser=await engine.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const expires=new Date(Date.now()+3600000).toISOString();
+ const fixture={signature_type:'wormhole',completed:true,in_system_name:'P-ZMZV',in_region_name:'Querious',in_system_class:'ns',in_signature:'ABC-123',out_signature:'XYZ-456',max_ship_size:'large',expires_at:expires};
+ await page.route('https://esi.evetech.net/**',r=>r.fulfill({json:[]}));
+ await page.route('https://api.eve-scout.com/**',r=>r.fulfill({json:[fixture]}));
+ await page.route('**/data/live.json',r=>r.fulfill({json:{storms:{checked:new Date().toISOString(),rows:[{system:'P-ZMZV',region:'Querious',name:'Electric A',type:'Electric',reported:'Oct-14@11:15'}]},Thera:{checked:new Date().toISOString(),rows:[{hub:'Thera',system:'P-ZMZV',region:'Querious',local:'ABC-123',signature:'XYZ-456',size:'large',expires}]}}}));
+ await page.goto('http://127.0.0.1:8765');await page.locator('#live-wormholes .connection-card').first().waitFor();
+ assert.equal(await page.locator('#live-wormholes .connection-card').count(),2);
+ await page.selectOption('#live-hub','Thera');assert.equal(await page.locator('#live-wormholes .connection-card').count(),1);
+ await page.fill('#live-search','no-such-system');assert.equal(await page.locator('#live-wormholes .connection-card').count(),0);
+ await page.fill('#live-search','querious');await page.locator('#live-wormholes button').first().click();assert.equal(await page.locator('#system-name').textContent(),'P-ZMZV');
+ assert.equal(await page.locator('#live-storms .connection-card').count(),1);
+ let map=await page.locator('.map-panel').boundingBox(),live=await page.locator('.live-panel').boundingBox();assert(live.x>=map.x+map.width-1);
+ await page.screenshot({path:`screenshots/${name}-desktop.png`,fullPage:true});
+ await page.selectOption('#font-scale','1.5');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.selectOption('#font-scale','1');
+ await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert(await page.locator('.live-panel').isVisible());
+ map=await page.locator('.map-panel').boundingBox();live=await page.locator('.live-panel').boundingBox();assert(live.y>=map.y+map.height-1);
+ await page.screenshot({path:`screenshots/${name}-mobile.png`,fullPage:true});
+ await page.route('https://api.eve-scout.com/**',r=>r.abort());await page.reload();await page.waitForFunction(()=>document.querySelector('#wormhole-status').textContent.includes('unavailable'));
+ assert.equal(await page.locator('#live-wormholes .connection-card').count(),1);assert.equal(errors.length,0,errors.join('\n'));
+ console.log('PASS '+name+': persistent panel, filters, map action, storms, font sizing, mobile layout, cached fallback, no JS errors');await browser.close();
+ }
+ }finally{server.kill();}})().catch(e=>{console.error(e);process.exit(1)});

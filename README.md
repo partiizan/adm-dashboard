@@ -40,3 +40,7 @@ Font size scales interface text and map labels to 100%, 125%, or 150%. ADM highl
 Sovereignty alliance names appear in selected-system details and map tooltips, resolved on demand from the public ESI alliance endpoint and cached for the session. Failed lookups display the alliance ID and retry after five minutes. No logo toggle is needed.
 
 Map labels display system name, sovereignty-holding alliance name, and ADM on separate lines. Labels reposition to avoid collisions; zoom in for crowded systems. Alliance names refresh labels as lookups finish. NPC/unclaimed systems are identified explicitly.
+
+## Wormholes and storms
+
+A permanent right-hand desktop panel shows active Thera/Turnur connections and reported Metaliminal storm centers. On narrower screens it stacks below the map so it remains accessible without another tab. Wormholes refresh directly from Eve-Scout every two minutes; expired connections are removed locally. Storm snapshots are fetched during Pages builds and on a ten-minute GitHub Actions schedule (scheduling delays are possible). Each source shows its checked time; failures retain clearly labeled previous snapshots. Storm data older than 30 minutes is marked stale. Search/filter connections, copy signatures, or show a system on the map. These connections are not added to gate routing.

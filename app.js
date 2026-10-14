@@ -1,3 +1,4 @@
+import {initLive} from './live.js';
 import {makeUniverse,route,parseSovereignty,securityColor,matchesAdm} from './core.js';
 import {StarMap} from './map.js';
 const $=id=>document.getElementById(id);
@@ -80,6 +81,7 @@ async function init(){
     addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
     try{Promise.resolve(context.registerTool({name:'select_star_system',description:'Select a star system and display its regional map and public ADM details.',inputSchema:{type:'object',properties:{name:{type:'string'}},required:['name'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(typeof input?.name!=='string'||!u.lookup(input.name))throw new Error('Unknown system');selectSystem(input.name,true);return {system:state.selected.name,region:state.region.name,adm:state.sov.get(state.selected.id)?.adm??null,cached:state.stale};}},{signal:lifecycle.signal})).catch(()=>{});}catch{/* Optional browser integration. */}
   }
+  initLive(selectSystem,name=>state.universe.lookup(name));
   $('refresh-adm').onclick=refreshAdm;refreshAdm();setInterval(()=>{state.map.draw();if(document.visibilityState==='visible'&&Date.now()>=state.nextCheck)refreshAdm();},30000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(state.checked&&Date.now()-state.checked>600000){state.stale=true;applySov();}refreshAdm();}});
 }
