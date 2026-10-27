@@ -28,3 +28,11 @@
 .live-panel[data-collapsed-feeds="2"] #skyhook-list{max-height:none;overflow:visible}
 @media(max-width:1150px){.live-disclosure{margin-top:0;min-width:0}}
 @media(max-width:850px){.live-disclosure{margin-top:16px}}
+
+.route-autocomplete{position:relative;margin:9px 0}
+.route-autocomplete input{margin:0!important}
+.route-suggestions{position:absolute;top:100%;left:0;right:0;z-index:20;max-height:240px;overflow-y:auto;background:#121e2c;border:1px solid #456078;border-radius:7px;box-shadow:0 8px 24px #0008}
+.route-suggestions[hidden]{display:none}
+.route-suggestions button{display:flex;flex-direction:column;width:100%;text-align:left;border:0;border-radius:0;padding:8px 10px;overflow-wrap:anywhere}
+.route-suggestions button[aria-selected="true"]{background:#215047;color:#fff}
+.route-suggestions small{color:var(--muted);font-size:.8em}

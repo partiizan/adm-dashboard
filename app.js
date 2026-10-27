@@ -61,6 +61,40 @@ function plotRoute(event){event?.preventDefault();const from=$('route-from').val
   result.forEach((s,index)=>{const li=el('li'),button=el('button');button.type='button';button.append(el('span',String(index).padStart(2,'0'),'step'),el('b',s.name));const sec=el('em',s.security.toFixed(1));sec.style.color=securityColor(s.security);button.append(sec);button.onclick=()=>selectSystem(s.name,true);li.append(button);$('route-list').append(li);});
   if(result.length)selectSystem(result[0].name);state.map.draw();save();
 }
+function routeAutocomplete(input,systems){
+  const box=el('div',null,'route-autocomplete');
+  input.before(box);box.append(input);
+  const list=el('div',null,'route-suggestions');list.id=input.id+'-suggestions';list.setAttribute('role','listbox');list.hidden=true;box.append(list);
+  input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-controls',list.id);input.setAttribute('aria-expanded','false');input.spellcheck=false;
+  let matches=[],active=-1;
+  function close(){list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');active=-1;}
+  function highlight(index){
+    active=index;[...list.children].forEach((option,i)=>option.setAttribute('aria-selected',String(i===active)));
+    if(active>=0){input.setAttribute('aria-activedescendant',list.children[active].id);list.children[active].scrollIntoView({block:'nearest'});}
+  }
+  function choose(index){if(!matches[index])return;input.value=matches[index].name;input.focus();close();save();}
+  function suggest(){
+    const query=input.value.trim().toLowerCase();list.replaceChildren();active=-1;input.removeAttribute('aria-activedescendant');
+    if(!query){close();return;}
+    matches=systems.filter(s=>s.name.toLowerCase().includes(query)).sort((a,b)=>Number(!a.name.toLowerCase().startsWith(query))-Number(!b.name.toLowerCase().startsWith(query))||a.name.localeCompare(b.name)).slice(0,12);
+    if(!matches.length){close();return;}
+    matches.forEach((s,i)=>{const option=el('button');option.type='button';option.tabIndex=-1;option.id=list.id+'-'+i;option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.append(el('strong',s.name),el('small',s.region));option.onmousedown=e=>e.preventDefault();option.onclick=()=>choose(i);list.append(option);});
+    list.hidden=false;input.setAttribute('aria-expanded','true');
+  }
+  input.addEventListener('input',()=>{suggest();save();});input.addEventListener('focus',suggest);
+  input.addEventListener('keydown',event=>{
+    if(event.isComposing)return;
+    if(event.key==='Escape'){event.preventDefault();close();return;}
+    if(event.key==='Tab'){close();return;}
+    if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+      event.preventDefault();if(list.hidden)suggest();if(list.hidden)return;
+      highlight(active<0?(event.key==='ArrowDown'?0:matches.length-1):(active+(event.key==='ArrowDown'?1:-1)+matches.length)%matches.length);return;
+    }
+    if(event.key==='Enter'&&!list.hidden){event.preventDefault();choose(active>=0?active:0);}
+  });
+  box.addEventListener('focusout',event=>{if(!box.contains(event.relatedTarget))close();});
+  document.addEventListener('pointerdown',event=>{if(!box.contains(event.target))close();});
+}
 async function init(){
   try{const response=await fetch('./data/universe.json');if(!response.ok)throw new Error('Map data unavailable');state.universe=makeUniverse(await response.json());}
   catch{$('map-loading').textContent='Could not load map data. Check your connection and reload this page.';$('app-status').textContent='Map download failed.';return;}
@@ -74,6 +108,7 @@ async function init(){
   $('search').oninput=()=>{const q=$('search').value.trim().toLowerCase();$('search-results').replaceChildren();if(!q)return;const found=u.systems.filter(s=>s.name.toLowerCase().includes(q)).sort((a,b)=>Number(!a.name.toLowerCase().startsWith(q))-Number(!b.name.toLowerCase().startsWith(q))||a.name.localeCompare(b.name)).slice(0,12);for(const s of found){const b=el('button',s.name);b.append(el('small',s.region));b.onclick=()=>{selectSystem(s.name);$('search-results').replaceChildren();$('search').value='';};$('search-results').append(b);}if(!found.length)$('search-results').append(el('p','No matching systems.','muted small'));};
   $('search').onkeydown=e=>{if(e.key==='Enter'){$('search-results').querySelector('button')?.click();e.preventDefault();}if(e.key==='Escape'){$('search-results').replaceChildren();}};
   $('set-start').onclick=()=>{if(state.selected){$('route-from').value=state.selected.name;save();}};$('set-end').onclick=()=>{if(state.selected){$('route-to').value=state.selected.name;save();}};
+  for(const id of ['route-from','route-to'])routeAutocomplete($(id),u.systems);
   $('route-form').onsubmit=plotRoute;$('clear-route').onclick=()=>{state.map.route=[];$('route-list').replaceChildren();$('route-summary').textContent='Route cleared.';state.map.draw();};
   $('zoom-in').onclick=()=>state.map.zoom(1.25);$('zoom-out').onclick=()=>state.map.zoom(.8);$('fit').onclick=()=>state.map.fit();$('show-adm').onchange=()=>{state.map.showAdm=$('show-adm').checked;state.map.draw();save();};
   try{if(cache?.data&&Number.isFinite(cache.checked)&&cache.checked<=Date.now()+60000){state.sov=parseSovereignty(cache.data);state.raw=cache.data;state.checked=cache.checked;state.etag=cache.etag;$('adm-status').textContent=`Cached · checked ${utc(cache.checked)} UTC`;applySov();}}catch{/* Invalid cache is replaced on the next fetch. */}
