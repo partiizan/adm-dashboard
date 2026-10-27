@@ -20,6 +20,11 @@ export function initSkyhooks(universe,map,getRegion,selectSystem){
   for(const s of active){
    const sys=systems.get(s.systemId),card=el('article','', 'connection-card skyhook-card');
    card.append(el('strong',sys.name),el('p','Planet ID '+s.planetId,'muted small'));
+   const sovereignty=map.sov.get(s.systemId);
+   const holder=map.sovereigntyLabel?.(sovereignty)??'Sovereignty unavailable';
+   const sovLine=el('p','System sovereignty: '+holder+(sovereignty&&map.stale?' (cached/unverified)':''),'muted small skyhook-sovereignty');
+   sovLine.title='System sovereignty holder; the public skyhook feed does not identify the skyhook owner.';
+   card.append(sovLine);
    card.append(el('p','Window closes '+new Date(s.end).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'})+' UTC · '+Math.max(1,Math.ceil((s.end-now)/60000))+'m remaining','expiry skyhook-color'));
    const show=el('button','Show on map');show.type='button';show.onclick=()=>selectSystem(sys.name,true);card.append(show);list.append(card);
   }

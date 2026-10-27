@@ -25,7 +25,7 @@ function allianceName(id){
   let entry=allianceNames.get(id);
   if(!entry||(!entry.pending&&!entry.name&&Date.now()>entry.retry)){
     entry={pending:true,retry:Date.now()+300000};allianceNames.set(id,entry);
-    fetch(`https://esi.evetech.net/alliances/${id}/`,{headers:{'X-Compatibility-Date':'2026-05-19'},signal:AbortSignal.timeout(15000)}).then(async response=>{if(!response.ok)throw new Error('Alliance unavailable');const data=await response.json();if(typeof data.name!=='string'||!data.name.trim())throw new Error('Missing name');entry.name=data.name;}).catch(()=>{}).finally(()=>{entry.pending=false;state.map?.draw();updateDetail();if(state.map?.hoverPoint)state.map.tooltip(state.map.hoverPoint);});
+    fetch(`https://esi.evetech.net/alliances/${id}/`,{headers:{'X-Compatibility-Date':'2026-05-19'},signal:AbortSignal.timeout(15000)}).then(async response=>{if(!response.ok)throw new Error('Alliance unavailable');const data=await response.json();if(typeof data.name!=='string'||!data.name.trim())throw new Error('Missing name');entry.name=data.name;}).catch(()=>{}).finally(()=>{entry.pending=false;state.map?.draw();updateDetail();skyhooks?.render();if(state.map?.hoverPoint)state.map.tooltip(state.map.hoverPoint);});
   }
   return entry.name||(entry.pending?`Loading alliance ${id}…`:`Alliance ${id} · name unavailable`);
 }
@@ -36,7 +36,7 @@ function updateDetail(){const s=state.selected;if(!s)return;const v=state.sov.ge
 }
 function updateFilter(){if(!state.region)return;const threshold=Number($('adm-filter').value);const count=state.region.nodes.filter(n=>!n.outside&&matchesAdm(state.sov.get(state.universe.lookup(n.name).id),threshold)).length;$('filter-status').textContent=threshold?`${count} systems in this region below ${threshold.toFixed(1)} · orange rings${state.stale?' · cached/unverified data':''}. Missing ADM is excluded.`:'No ADM highlight filter.';}
 function displayOptions(){const scale=Number($('font-scale').value);document.documentElement.style.setProperty('--font-scale',scale);state.map.fontScale=scale;state.map.admFilter=Number($('adm-filter').value);updateFilter();state.map.draw();save();}
-function applySov(){if(!state.map)return;state.map.sov=state.sov;state.map.stale=state.stale;state.map.draw();updateFilter();updateDetail();$('feed-dot').classList.toggle('fresh',!state.stale);}
+function applySov(){if(!state.map)return;state.map.sov=state.sov;state.map.stale=state.stale;state.map.draw();updateFilter();updateDetail();skyhooks?.render();$('feed-dot').classList.toggle('fresh',!state.stale);}
 const utc=time=>new Date(time).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});
 async function refreshAdm(){
   if(state.fetching)return;
