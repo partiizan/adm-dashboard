@@ -29,12 +29,12 @@
 <p class="muted small">Pink diamonds mark systems with an open theft-vulnerability window. Upcoming windows are excluded. ESI is cached; verify in game before travel. Planet IDs identify skyhooks because the public feed does not provide structure names.</p>
 </section>
 <div class="live-heading"><h2>Wormholes &amp; storms</h2><button id="refresh-live" type="button">Check feeds</button></div>
-<section aria-labelledby="wormhole-heading"><h3 id="wormhole-heading">Thera / Turnur <span id="wormhole-count" class="count">0</span></h3>
+<details id="wormhole-section" class="live-disclosure" open><summary><h3 id="wormhole-heading">Thera / Turnur <span id="wormhole-count" class="count">0</span></h3></summary><div class="disclosure-body">
 <p class="muted small">Active connections · earliest expiry first</p>
 <div class="live-filters"><label class="sr-only" for="live-search">Search connections</label><input id="live-search" type="search" placeholder="System, region or signature…"><label class="sr-only" for="live-hub">Wormhole hub</label><select id="live-hub"><option value="">All hubs</option><option>Thera</option><option>Turnur</option></select></div>
 <p id="wormhole-status" class="live-status">Connecting to Eve-Scout…</p><div id="live-wormholes" class="live-list"></div>
-<p class="muted small">Verify expiry, mass and ship restrictions in game. <a href="https://www.eve-scout.com/" target="_blank" rel="noopener">Eve-Scout ↗</a></p></section>
-<section aria-labelledby="storm-heading"><h3 id="storm-heading">Metaliminal storms</h3><p id="storm-status" class="live-status">Loading storm snapshot…</p><div id="live-storms" class="live-list storm-list"></div><p class="muted small">Reported storm centers; verify current effects in game. <a href="https://evescoutrescue.com/home/stormtrack.php" target="_blank" rel="noopener">Storm tracker ↗</a></p></section>
+<p class="muted small">Verify expiry, mass and ship restrictions in game. <a href="https://www.eve-scout.com/" target="_blank" rel="noopener">Eve-Scout ↗</a></p></div></details>
+<details id="storm-section" class="live-disclosure" open><summary><h3 id="storm-heading">Metaliminal storms</h3></summary><div class="disclosure-body"><p id="storm-status" class="live-status">Loading storm snapshot…</p><div id="live-storms" class="live-list storm-list"></div><p class="muted small">Reported storm centers; verify current effects in game. <a href="https://evescoutrescue.com/home/stormtrack.php" target="_blank" rel="noopener">Storm tracker ↗</a></p></div></details>
 <p id="live-message" class="muted small" role="status"></p></aside>
 </main>
 <footer class="bottom-bar"><span id="app-status" role="status">Public ESI sovereignty · No account required</span><button id="about-open" class="text-button">About & privacy</button></footer>

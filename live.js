@@ -2,6 +2,17 @@ import {parseConnections,activeConnections} from './live-core.js';
 const $=id=>document.getElementById(id);
 const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
 export function initLive(selectSystem,lookup){
+ const sections=[$('wormhole-section'),$('storm-section')];
+ let collapsed={};try{collapsed=JSON.parse(localStorage.getItem('adm-live-collapsed'))||{};}catch{}
+ const resizeSkyhooks=()=>{document.querySelector('.live-panel').dataset.collapsedFeeds=String(sections.filter(s=>!s.open).length);};
+ for(const section of sections){
+  section.open=collapsed[section.id]!==true;
+  section.addEventListener('toggle',()=>{
+   resizeSkyhooks();
+   try{localStorage.setItem('adm-live-collapsed',JSON.stringify(Object.fromEntries(sections.map(s=>[s.id,!s.open]))));}catch{}
+  });
+ }
+ resizeSkyhooks();
  const state={Thera:{rows:[]},Turnur:{rows:[]},storms:{rows:[]}};let busy=false,next=0;
  const stamp=s=>s?new Date(s).toLocaleString(undefined,{dateStyle:'short',timeStyle:'short'}):'not yet checked';
  function status(name,maxAge){const s=state[name];return !s.checked?`${name}: ${s.error?'unavailable':'waiting for data'}`:`${name}: ${s.error?'unavailable · retained data':Date.now()-Date.parse(s.checked)>maxAge?'stale snapshot':'checked'} ${stamp(s.checked)}`;}

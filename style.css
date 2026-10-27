@@ -17,3 +17,14 @@
 
 .skyhook-color{color:#ff79bf}.skyhook-card{border-left:3px solid #ff79bf}.skyhook-section{border-bottom:1px solid var(--line);padding-bottom:12px}.skyhook-section .count{color:#ff9dce;background:#3b2336}#skyhook-list{max-height:28vh}
 @media(max-width:1150px){.skyhook-section{grid-column:1/-1}#skyhook-list{max-height:320px}}
+
+/* Independent, keyboard-accessible drawers retain their state between visits. */
+.live-disclosure{margin-top:20px;border-top:1px solid var(--line)}
+.live-disclosure>summary{cursor:pointer;padding:10px 0;color:var(--fg)}
+.live-disclosure>summary h3{display:inline;margin:0;font-size:1.1em}
+.live-disclosure>summary::marker{color:var(--accent)}
+.live-disclosure>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.live-panel[data-collapsed-feeds="1"] #skyhook-list{max-height:50vh}
+.live-panel[data-collapsed-feeds="2"] #skyhook-list{max-height:none;overflow:visible}
+@media(max-width:1150px){.live-disclosure{margin-top:0;min-width:0}}
+@media(max-width:850px){.live-disclosure{margin-top:16px}}
