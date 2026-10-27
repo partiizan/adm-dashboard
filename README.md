@@ -44,3 +44,11 @@ Map labels display system name, sovereignty-holding alliance name, and ADM on se
 ## Wormholes and storms
 
 A permanent right-hand desktop panel shows active Thera/Turnur connections and reported Metaliminal storm centers. On narrower screens it stacks below the map so it remains accessible without another tab. Wormholes refresh directly from Eve-Scout every two minutes; expired connections are removed locally. Storm snapshots are fetched during Pages builds and on a ten-minute GitHub Actions schedule (scheduling delays are possible). Each source shows its checked time; failures retain clearly labeled previous snapshots. Storm data older than 30 minutes is marked stale. Search/filter connections, copy signatures, or show a system on the map. These connections are not added to gate routing.
+
+## Vulnerable skyhooks overlay
+
+Enable **Vulnerable skyhooks** above the map. Pink diamonds and counts identify systems with currently open theft-vulnerability windows in the selected region; the right-hand list shows each planet ID and window closing time. Select Show on map to focus a system. Upcoming windows are excluded and expired windows disappear automatically.
+
+Data comes directly from CCP's public /skyhooks/raidable endpoint using compatibility date 2026-05-19, without SSO. It refreshes every five minutes while the page is visible and respects Retry-After. Failed or older-than-ten-minute checks hide current highlights and show unknown/stale status instead of reporting zero. The feed is cached; verify in game. Public records provide planet IDs, not structure names.
+
+Reference: https://esi.evetech.net/meta/openapi.json?compatibility_date=2026-05-19

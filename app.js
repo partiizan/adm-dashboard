@@ -1,3 +1,4 @@
+import {initSkyhooks} from './skyhooks.js';
 import {initLive} from './live.js';
 import {makeUniverse,route,parseSovereignty,securityColor,matchesAdm} from './core.js';
 import {StarMap} from './map.js';
@@ -6,12 +7,13 @@ const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fa
 const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));}catch{/* Private mode or full storage: session still works. */}};
 const prefs=read('smt-atlas-prefs',{}),cache=read('smt-atlas-adm',null);
 const state={universe:null,map:null,region:null,selected:null,sov:new Map(),checked:null,etag:null,stale:true,nextCheck:0,fetching:false};
+let skyhooks;
 function save(){write('smt-atlas-prefs',{region:state.region?.name,selected:state.selected?.name,from:$('route-from').value,to:$('route-to').value,high:$('high-sec').checked,showAdm:$('show-adm').checked,fontScale:Number($('font-scale').value),admFilter:Number($('adm-filter').value)});}
 function el(tag,text,cls){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;}
 function panel(name){document.querySelector('.workspace').dataset.panel=name;for(const b of document.querySelectorAll('[data-panel].mobile-nav button, .mobile-nav button'))b.classList.toggle('active',b.dataset.panel===name);}
 for(const button of document.querySelectorAll('.mobile-nav button'))button.addEventListener('click',()=>panel(button.dataset.panel));
 $('about-open').onclick=()=>$('about').showModal();$('about-close').onclick=()=>$('about').close();
-function chooseRegion(name){const region=state.universe.regions.find(r=>r.name===name);if(!region)return;state.region=region;$('region').value=name;$('region-name').textContent=name;$('region-summary').textContent=`${region.nodes.filter(n=>!n.outside).length} systems · Stargate network`;state.map.setRegion(region);updateFilter();save();}
+function chooseRegion(name){const region=state.universe.regions.find(r=>r.name===name);if(!region)return;state.region=region;$('region').value=name;$('region-name').textContent=name;$('region-summary').textContent=`${region.nodes.filter(n=>!n.outside).length} systems · Stargate network`;state.map.setRegion(region);updateFilter();skyhooks?.render();save();}
 function selectSystem(name,showMap=false){const s=state.universe.lookup(name);if(!s)return;state.selected=s;state.map.selected=s.name;
   if(!state.region?.nodes.some(n=>n.name===s.name)){const r=state.universe.regions.find(r=>r.name===s.region)||state.universe.regions.find(r=>r.nodes.some(n=>n.name===s.name));if(r)chooseRegion(r.name);}
   $('system-name').textContent=s.name;$('system-info').textContent=`${s.region}\nSecurity ${s.security.toFixed(2)} · ${s.jumps.length} gates`+(s.station?'\nNPC station present':'');$('set-start').disabled=$('set-end').disabled=false;updateDetail();state.map.draw();save();
@@ -82,6 +84,7 @@ async function init(){
     try{Promise.resolve(context.registerTool({name:'select_star_system',description:'Select a star system and display its regional map and public ADM details.',inputSchema:{type:'object',properties:{name:{type:'string'}},required:['name'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(typeof input?.name!=='string'||!u.lookup(input.name))throw new Error('Unknown system');selectSystem(input.name,true);return {system:state.selected.name,region:state.region.name,adm:state.sov.get(state.selected.id)?.adm??null,cached:state.stale};}},{signal:lifecycle.signal})).catch(()=>{});}catch{/* Optional browser integration. */}
   }
   initLive(selectSystem,name=>state.universe.lookup(name));
+  skyhooks=initSkyhooks(u,state.map,()=>state.region?.name,selectSystem);
   $('refresh-adm').onclick=refreshAdm;refreshAdm();setInterval(()=>{state.map.draw();if(document.visibilityState==='visible'&&Date.now()>=state.nextCheck)refreshAdm();},30000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(state.checked&&Date.now()-state.checked>600000){state.stale=true;applySov();}refreshAdm();}});
 }
