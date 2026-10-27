@@ -15,3 +15,13 @@ export function vulnerableInRegion(rows,systems,region,now=Date.now()){
  return rows.filter(s=>s.start<=now&&now<s.end&&systems.get(s.systemId)?.region===region).sort((a,b)=>a.end-b.end||a.planetId-b.planetId);
 }
 export function skyhookFeedFresh(checked,error,now=Date.now()){return !error&&Number.isFinite(checked)&&checked>0&&now>=checked&&now-checked<=SKYHOOK_MAX_AGE;}
+
+export function planetLabel(name,system){
+ const prefix=system+' ',suffix=name.startsWith(prefix)?name.slice(prefix.length):'';
+ if(/^[IVXLCDM]+$/.test(suffix)){
+  const digits={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};let value=0;
+  for(let i=0;i<suffix.length;i++)value+=digits[suffix[i]]<(digits[suffix[i+1]]||0)?-digits[suffix[i]]:digits[suffix[i]];
+  return system+': Planet '+value;
+ }
+ return name;
+}
